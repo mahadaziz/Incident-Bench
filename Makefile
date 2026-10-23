@@ -11,7 +11,7 @@ endif
 AGENT := agent
 CONTROL_PLANE := control-plane
 
-.PHONY: setup test test-py test-go lint fmt
+.PHONY: setup test test-py test-go lint fmt up down
 
 setup:
 	@command -v uv >/dev/null || { echo "uv not found. Install it: https://docs.astral.sh/uv/getting-started/installation/" >&2; exit 1; }
@@ -34,3 +34,9 @@ lint:
 fmt:
 	cd $(AGENT) && uv run ruff format && uv run ruff check --fix
 	cd $(CONTROL_PLANE) && gofmt -w .
+
+up:
+	docker compose up -d --wait
+
+down:
+	docker compose down
