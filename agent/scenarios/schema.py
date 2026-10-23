@@ -164,6 +164,13 @@ class Scenario(_Model):
         if overlap := sorted(set(gt.required_evidence) & set(gt.distractors)):
             problems.append(f"ids are both required evidence and distractors {overlap}")
 
+        services = {self.alert.service} | {item.service for item in self._evidence()}
+        if gt.affected_service not in services:
+            problems.append(
+                f"ground_truth.affected_service {gt.affected_service!r} is not a service "
+                "named in the alert or evidence"
+            )
+
         if problems:
             raise ValueError(f"scenario {self.id!r}: " + "; ".join(problems))
         return self

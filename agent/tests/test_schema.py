@@ -65,6 +65,11 @@ def test_rejects_missing_distractors(scenario_data: dict[str, Any], value: Any) 
     _reject(scenario_data, "distractors")
 
 
+def test_rejects_unknown_affected_service(scenario_data: dict[str, Any]) -> None:
+    scenario_data["ground_truth"]["affected_service"] = "orders-apl"
+    _reject(scenario_data, "affected_service 'orders-apl' is not a service")
+
+
 def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"].append("log-999")
     _reject(scenario_data, "scenario 'fixture-orders-outage'")
