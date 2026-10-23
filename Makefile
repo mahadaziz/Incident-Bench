@@ -31,7 +31,7 @@ lint:
 	cd $(CONTROL_PLANE) && go vet ./...
 
 fmt:
-	cd $(AGENT) && uv run ruff check --fix && uv run ruff format
+	cd $(AGENT) && uv run ruff check --fix-only && uv run ruff format
 	cd $(CONTROL_PLANE) && gofmt -w .
 
 up:
