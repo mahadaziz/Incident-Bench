@@ -26,6 +26,14 @@ def _reject(data: dict[str, Any], match: str) -> None:
         Scenario.model_validate_json(json.dumps(data))
 
 
+# Matching message text is unreliable: pydantic echoes a truncated copy of the input.
+def _reject_field(data: dict[str, Any], loc: tuple[Any, ...], error_type: str) -> None:
+    with pytest.raises(ValidationError) as exc:
+        Scenario.model_validate_json(json.dumps(data))
+    errors = [(e["loc"], e["type"]) for e in exc.value.errors()]
+    assert (loc, error_type) in errors, errors
+
+
 def test_rejects_duplicate_id_within_kind(scenario_data: dict[str, Any]) -> None:
     scenario_data["logs"][1]["id"] = "log-001"
     _reject(scenario_data, r"duplicate evidence ids \['log-001'\]")
@@ -53,12 +61,12 @@ def test_rejects_repeated_required_id(scenario_data: dict[str, Any]) -> None:
 
 def test_rejects_empty_required_evidence(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"] = []
-    _reject(scenario_data, "required_evidence")
+    _reject_field(scenario_data, ("ground_truth", "required_evidence"), "too_short")
 
 
 def test_rejects_empty_evidence_group(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"].append([])
-    _reject(scenario_data, "required_evidence")
+    _reject_field(scenario_data, ("ground_truth", "required_evidence", 2), "too_short")
 
 
 def test_accepts_alternative_ids_within_a_group(scenario_data: dict[str, Any]) -> None:
@@ -74,13 +82,15 @@ def test_rejects_id_repeated_within_a_group(scenario_data: dict[str, Any]) -> No
     _reject(scenario_data, r"required_evidence repeats \['log-002'\]")
 
 
-@pytest.mark.parametrize("value", [[], None])
-def test_rejects_missing_distractors(scenario_data: dict[str, Any], value: Any) -> None:
+@pytest.mark.parametrize(("value", "error_type"), [([], "too_short"), (None, "missing")])
+def test_rejects_missing_distractors(
+    scenario_data: dict[str, Any], value: Any, error_type: str
+) -> None:
     if value is None:
         del scenario_data["ground_truth"]["distractors"]
     else:
         scenario_data["ground_truth"]["distractors"] = value
-    _reject(scenario_data, "distractors")
+    _reject_field(scenario_data, ("ground_truth", "distractors"), error_type)
 
 
 def test_rejects_unknown_affected_service(scenario_data: dict[str, Any]) -> None:
@@ -106,7 +116,7 @@ def test_rejects_blank_text(
     for key in path[:-1]:
         target = target[key]
     target[path[-1]] = blank
-    _reject(scenario_data, "should match pattern")
+    _reject_field(scenario_data, path, "string_pattern_mismatch")
 
 
 def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
@@ -130,13 +140,15 @@ def test_rejects_malformed_evidence_id(
     scenario_data: dict[str, Any], kind: str, bad_id: str
 ) -> None:
     scenario_data[kind][0]["id"] = bad_id
-    _reject(scenario_data, "String should match pattern")
+    _reject_field(scenario_data, (kind, 0, "id"), "string_pattern_mismatch")
 
 
 @pytest.mark.parametrize("bad_id", ["the-bad-deploy", "log-١٢٣"])
 def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any], bad_id: str) -> None:
     scenario_data["ground_truth"]["required_evidence"] = [[bad_id]]
-    _reject(scenario_data, "String should match pattern")
+    _reject_field(
+        scenario_data, ("ground_truth", "required_evidence", 0, 0), "string_pattern_mismatch"
+    )
 
 
 @pytest.mark.parametrize(
@@ -154,13 +166,17 @@ def test_rejects_unknown_field(scenario_data: dict[str, Any], path: tuple[Any, .
     for key in path:
         target = target[key]
     target["distractor"] = ["dep-001"]
-    _reject(scenario_data, "Extra inputs are not permitted")
+    _reject_field(scenario_data, (*path, "distractor"), "extra_forbidden")
 
 
-@pytest.mark.parametrize("difficulty", [0, 4])
-def test_rejects_out_of_range_difficulty(scenario_data: dict[str, Any], difficulty: int) -> None:
+@pytest.mark.parametrize(
+    ("difficulty", "error_type"), [(0, "greater_than_equal"), (4, "less_than_equal")]
+)
+def test_rejects_out_of_range_difficulty(
+    scenario_data: dict[str, Any], difficulty: int, error_type: str
+) -> None:
     scenario_data["difficulty"] = difficulty
-    _reject(scenario_data, "difficulty")
+    _reject_field(scenario_data, ("difficulty",), error_type)
 
 
 @pytest.mark.parametrize(
@@ -178,33 +194,33 @@ def test_rejects_naive_timestamp(scenario_data: dict[str, Any], path: tuple[Any,
     for key in path[:-1]:
         target = target[key]
     target[path[-1]] = "2026-01-10T12:00:00"
-    _reject(scenario_data, "timezone")
+    _reject_field(scenario_data, path, "timezone_aware")
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_rejects_non_finite_metric_value(scenario_data: dict[str, Any], value: float) -> None:
     scenario_data["metrics"][0]["points"][0]["value"] = value
-    _reject(scenario_data, "finite number")
+    _reject_field(scenario_data, ("metrics", 0, "points", 0, "value"), "finite_number")
 
 
 @pytest.mark.parametrize(
-    ("path", "wrong_type"),
+    ("path", "wrong_type", "error_type"),
     [
-        (("difficulty",), True),
-        (("difficulty",), "2"),
-        (("budget", "max_steps"), "10"),
-        (("metrics", 0, "points", 0, "value"), "3"),
-        (("configs", 0, "values", "INVENTORY_URL"), 9000),
+        (("difficulty",), True, "int_type"),
+        (("difficulty",), "2", "int_type"),
+        (("difficulty",), 2.0, "int_type"),
+        (("budget", "max_steps"), "10", "int_type"),
+        (("metrics", 0, "points", 0, "value"), "3", "float_type"),
     ],
 )
 def test_rejects_wrong_json_type_instead_of_coercing(
-    scenario_data: dict[str, Any], path: tuple[Any, ...], wrong_type: Any
+    scenario_data: dict[str, Any], path: tuple[Any, ...], wrong_type: Any, error_type: str
 ) -> None:
     target: Any = scenario_data
     for key in path[:-1]:
         target = target[key]
     target[path[-1]] = wrong_type
-    _reject(scenario_data, "valid")
+    _reject_field(scenario_data, path, error_type)
 
 
 def test_accepts_integer_metric_values(scenario_data: dict[str, Any]) -> None:
@@ -221,21 +237,21 @@ def test_rejects_unordered_metric_points(scenario_data: dict[str, Any], second: 
 
 def test_rejects_unknown_root_cause(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["root_cause"] = "cosmic_rays"
-    _reject(scenario_data, "root_cause")
+    _reject_field(scenario_data, ("ground_truth", "root_cause"), "enum")
 
 
 def test_rejects_unknown_source(scenario_data: dict[str, Any]) -> None:
     scenario_data["source"] = "imagined"
-    _reject(scenario_data, "source")
+    _reject_field(scenario_data, ("source",), "enum")
 
 
 @pytest.mark.parametrize("bad_id", ["Has-Caps", "spaces here", "trailing-", ""])
 def test_rejects_malformed_scenario_id(scenario_data: dict[str, Any], bad_id: str) -> None:
     scenario_data["id"] = bad_id
-    _reject(scenario_data, "id")
+    _reject_field(scenario_data, ("id",), "string_pattern_mismatch")
 
 
 @pytest.mark.parametrize("field", ["max_steps", "max_tokens"])
 def test_rejects_non_positive_budget(scenario_data: dict[str, Any], field: str) -> None:
     scenario_data["budget"][field] = 0
-    _reject(scenario_data, field)
+    _reject_field(scenario_data, ("budget", field), "greater_than")
