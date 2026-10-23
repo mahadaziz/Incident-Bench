@@ -39,7 +39,7 @@ def _scenario_files(directory: Path) -> list[Path]:
     # drop out of the scenario set.
     files = []
     for entry in sorted(directory.iterdir()):
-        if entry.name.startswith("."):
+        if entry.name.startswith(".") and entry.suffix != ".json":
             continue
         if not entry.is_file() or entry.suffix != ".json":
             raise ScenarioLoadError(f"{entry}: not a .json scenario file")

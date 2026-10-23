@@ -73,6 +73,14 @@ def test_rejects_invalid_scenario_naming_the_file(
         load_dir(tmp_path)
 
 
+def test_rejects_hidden_json_file(tmp_path: Path, scenario_data: dict[str, Any]) -> None:
+    _write(tmp_path, scenario_data)
+    _write(tmp_path, {**scenario_data, "id": "other"}, name=".other")
+
+    with pytest.raises(ScenarioLoadError, match=r"\.other\.json"):
+        load_dir(tmp_path)
+
+
 @pytest.mark.parametrize("name", ["notes.txt", "scenario.yaml", "subdir"])
 def test_rejects_non_scenario_entries(
     tmp_path: Path, scenario_data: dict[str, Any], name: str
