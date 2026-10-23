@@ -294,3 +294,11 @@ def test_accepts_config_key(scenario_data: dict[str, Any], good_key: str) -> Non
     scenario_data["configs"][0]["values"] = {good_key: "x"}
 
     _ = Scenario.model_validate_json(json.dumps(scenario_data))
+
+
+@pytest.mark.parametrize(
+    "bad", ["cpu_utilization ", "CPU_Utilization", "cpu-utilization", "9lives"]
+)
+def test_rejects_non_snake_case_metric_name(scenario_data: dict[str, Any], bad: str) -> None:
+    scenario_data["metrics"][0]["name"] = bad
+    _reject_field(scenario_data, ("metrics", 0, "name"), "string_pattern_mismatch")

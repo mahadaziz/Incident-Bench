@@ -38,8 +38,9 @@ Text = Annotated[str, StringConstraints(pattern=r"\S")]
 ConfigKey = Annotated[str, StringConstraints(pattern=r"^\S(?:.*\S)?$")]
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 ScenarioId = Slug
-# Tools will look services up by exact name, so stray spaces or capitals would hide evidence.
+# Tools look services and metrics up by exact name, so stray spaces or capitals hide evidence.
 ServiceName = Slug
+MetricName = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$")]
 # Opaque ids (kind + number, one spelling: never log-0001) can't leak answers or look alike.
 _NUMBER = r"(?:[0-9]{3}|[1-9][0-9]{3,})"
 LogId = Annotated[str, StringConstraints(pattern=rf"^log-{_NUMBER}$")]
@@ -73,7 +74,7 @@ class MetricPoint(_Model):
 
 class MetricSeries(_Model):
     id: MetricId
-    name: Text
+    name: MetricName
     service: ServiceName
     unit: Text
     points: tuple[MetricPoint, ...] = Field(min_length=1)
