@@ -39,8 +39,7 @@ Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 ScenarioId = Slug
 # Tools will look services up by exact name, so stray spaces or capitals would hide evidence.
 ServiceName = Slug
-# Evidence ids must stay opaque (kind + number): a descriptive id would leak the answer.
-# Exactly one spelling per number (log-001, log-1000; never log-0001), so ids can't look alike.
+# Opaque ids (kind + number, one spelling: never log-0001) can't leak answers or look alike.
 _NUMBER = r"(?:[0-9]{3}|[1-9][0-9]{3,})"
 LogId = Annotated[str, StringConstraints(pattern=rf"^log-{_NUMBER}$")]
 MetricId = Annotated[str, StringConstraints(pattern=rf"^met-{_NUMBER}$")]
