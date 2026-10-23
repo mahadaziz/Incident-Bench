@@ -33,7 +33,7 @@ class RootCause(StrEnum):
     INFRA_FAILURE = "infra_failure"
 
 
-Text = Annotated[str, StringConstraints(min_length=1)]
+Text = Annotated[str, StringConstraints(pattern=r"\S")]
 ScenarioId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 # Evidence ids must stay opaque (kind + number): a descriptive id would leak the answer.
 LogId = Annotated[str, StringConstraints(pattern=r"^log-[0-9]{3,}$")]

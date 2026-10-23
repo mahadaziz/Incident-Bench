@@ -70,6 +70,27 @@ def test_rejects_unknown_affected_service(scenario_data: dict[str, Any]) -> None
     _reject(scenario_data, "affected_service 'orders-apl' is not a service")
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("title",),
+        ("alert", "summary"),
+        ("logs", 0, "message"),
+        ("ground_truth", "summary"),
+        ("ground_truth", "acceptable_remediations", 0),
+    ],
+)
+@pytest.mark.parametrize("blank", ["", "   ", "\n\t"])
+def test_rejects_blank_text(
+    scenario_data: dict[str, Any], path: tuple[Any, ...], blank: str
+) -> None:
+    target: Any = scenario_data
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = blank
+    _reject(scenario_data, "should match pattern")
+
+
 def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"].append("log-999")
     _reject(scenario_data, "scenario 'fixture-orders-outage'")
