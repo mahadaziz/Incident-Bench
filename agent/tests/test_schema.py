@@ -130,6 +130,8 @@ def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
         ("logs", "dep-001"),
         ("logs", "log-1"),
         ("logs", "log-cert-expired"),
+        ("logs", "log-0001"),
+        ("metrics", "met-01"),
         ("logs", "log-١٢٣"),
         ("metrics", "log-005"),
         ("deploys", "dep-latest"),
@@ -143,7 +145,7 @@ def test_rejects_malformed_evidence_id(
     _reject_field(scenario_data, (kind, 0, "id"), "string_pattern_mismatch")
 
 
-@pytest.mark.parametrize("bad_id", ["the-bad-deploy", "log-١٢٣"])
+@pytest.mark.parametrize("bad_id", ["the-bad-deploy", "log-0002", "log-١٢٣"])
 def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any], bad_id: str) -> None:
     scenario_data["ground_truth"]["required_evidence"] = [[bad_id]]
     _reject_field(
@@ -279,3 +281,10 @@ def test_rejects_non_slug_service_name(
         target = target[key]
     target[path[-1]] = bad
     _reject_field(scenario_data, path, "string_pattern_mismatch")
+
+
+@pytest.mark.parametrize("good_id", ["log-000", "log-999", "log-1000", "log-12345"])
+def test_accepts_canonical_evidence_ids(scenario_data: dict[str, Any], good_id: str) -> None:
+    scenario_data["logs"][0]["id"] = good_id
+
+    _ = Scenario.model_validate_json(json.dumps(scenario_data))

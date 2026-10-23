@@ -40,11 +40,13 @@ ScenarioId = Slug
 # Tools will look services up by exact name, so stray spaces or capitals would hide evidence.
 ServiceName = Slug
 # Evidence ids must stay opaque (kind + number): a descriptive id would leak the answer.
-LogId = Annotated[str, StringConstraints(pattern=r"^log-[0-9]{3,}$")]
-MetricId = Annotated[str, StringConstraints(pattern=r"^met-[0-9]{3,}$")]
-DeployId = Annotated[str, StringConstraints(pattern=r"^dep-[0-9]{3,}$")]
-ConfigId = Annotated[str, StringConstraints(pattern=r"^cfg-[0-9]{3,}$")]
-EvidenceId = Annotated[str, StringConstraints(pattern=r"^(log|met|dep|cfg)-[0-9]{3,}$")]
+# Exactly one spelling per number (log-001, log-1000; never log-0001), so ids can't look alike.
+_NUMBER = r"(?:[0-9]{3}|[1-9][0-9]{3,})"
+LogId = Annotated[str, StringConstraints(pattern=rf"^log-{_NUMBER}$")]
+MetricId = Annotated[str, StringConstraints(pattern=rf"^met-{_NUMBER}$")]
+DeployId = Annotated[str, StringConstraints(pattern=rf"^dep-{_NUMBER}$")]
+ConfigId = Annotated[str, StringConstraints(pattern=rf"^cfg-{_NUMBER}$")]
+EvidenceId = Annotated[str, StringConstraints(pattern=rf"^(?:log|met|dep|cfg)-{_NUMBER}$")]
 EvidenceGroup = Annotated[tuple[EvidenceId, ...], Field(min_length=1)]
 
 
