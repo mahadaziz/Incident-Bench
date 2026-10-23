@@ -73,6 +73,14 @@ def test_rejects_byte_order_mark_with_a_clear_message(
         load_dir(tmp_path)
 
 
+def test_rejects_utf16_with_a_clear_message(tmp_path: Path, scenario_data: dict[str, Any]) -> None:
+    file = tmp_path / f"{scenario_data['id']}.json"
+    file.write_text(json.dumps(scenario_data), encoding="utf-16")
+
+    with pytest.raises(ScenarioLoadError, match="not UTF-8"):
+        load_dir(tmp_path)
+
+
 def test_rejects_invalid_scenario_naming_the_file(
     tmp_path: Path, scenario_data: dict[str, Any]
 ) -> None:

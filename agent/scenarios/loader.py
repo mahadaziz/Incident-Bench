@@ -64,6 +64,10 @@ def load_file(file: Path) -> Scenario:
         data = file.read_bytes()
         if data.startswith(codecs.BOM_UTF8):
             raise ValueError("starts with a UTF-8 byte-order mark; save as UTF-8 without BOM")
+        try:
+            data.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise ValueError(f"not UTF-8 ({e}); save as UTF-8 without BOM") from e
         json.loads(data, object_pairs_hook=_reject_duplicate_keys)
         scenario = Scenario.model_validate_json(data)
     except (OSError, ValueError, ValidationError) as e:
