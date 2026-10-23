@@ -102,6 +102,15 @@ class Budget(_Model):
     max_tokens: int = Field(gt=0)
 
 
+class AgentView(_Model):
+    alert: Alert
+    logs: tuple[LogLine, ...]
+    metrics: tuple[MetricSeries, ...]
+    deploys: tuple[Deploy, ...]
+    configs: tuple[ConfigSnapshot, ...]
+    budget: Budget
+
+
 class Scenario(_Model):
     id: ScenarioId
     title: Text
@@ -124,6 +133,17 @@ class Scenario(_Model):
 
     def evidence_ids(self) -> frozenset[str]:
         return frozenset(item.id for item in self._evidence())
+
+    # Allowlist, not a copy-and-strip: a field added to Scenario later stays hidden by default.
+    def agent_view(self) -> AgentView:
+        return AgentView(
+            alert=self.alert,
+            logs=self.logs,
+            metrics=self.metrics,
+            deploys=self.deploys,
+            configs=self.configs,
+            budget=self.budget,
+        )
 
     @model_validator(mode="after")
     def _check_evidence_ids(self) -> Self:
