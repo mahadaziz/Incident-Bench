@@ -68,8 +68,8 @@ part of it in interviews. So:
 | `make setup` | `uv sync` in `agent/`, `go mod download` in `control-plane/` |
 | `make test` | Both suites. Go runs with `-race`. Required before every commit once the Makefile exists |
 | `make test-py` / `make test-go` | One side only |
-| `make lint` | `ruff check` + `gofmt -l` + `go vet` |
-| `make fmt` | `ruff format` + `gofmt -w` |
+| `make lint` | `ruff check` + `ruff format --check` + `gofmt -l` + `go vet` |
+| `make fmt` | `ruff check --fix-only` + `ruff format` + `gofmt -w` |
 | `make up` / `make down` | Docker Compose: Postgres+pgvector, Redis 7 |
 | `make eval` | (planned, step 2) Full eval run; writes a log to `results/` |
 
