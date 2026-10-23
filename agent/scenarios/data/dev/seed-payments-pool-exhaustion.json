@@ -98,8 +98,8 @@
     },
     {
       "id": "met-003",
-      "name": "outbound_request_duration_p95",
-      "service": "order-service:payments-gateway",
+      "name": "payments_gateway_client_duration_p95",
+      "service": "order-service",
       "unit": "ms",
       "points": [
         {"timestamp": "2026-04-17T09:55:00Z", "value": 290},
