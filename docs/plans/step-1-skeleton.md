@@ -259,3 +259,37 @@ up to 3 rounds.
 ## Questions for me
 None blocking. You'll review the drafted seed scenarios' ground truth in the PR, since
 that content is the benchmark's answer key.
+
+## Deviations from plan
+
+Recorded after review. Where this list and the plan above disagree, this list wins.
+
+- **AgentView has no `budget`.** Seed budgets scale with difficulty, so showing the budget
+  leaked difficulty. The runtime enforces it instead. Don't add it back.
+- **CI runs on every push and has no `pull_request` trigger.** Push runs already report on
+  PR commits, so a `pull_request` trigger would run everything twice.
+- **`required_evidence` is a list of groups**, one per causal fact; citing any ID in a
+  group covers it. `distractors` lists every ID of every red herring. In the env-var
+  seed, the triggering v3.4.1 deploy is neutral (neither required nor a distractor).
+- **The seed test checks the three seed ids exist**, not that dev holds exactly 3
+  scenarios, so step 3 can add dev scenarios without breaking it.
+- **Commit order:** the schema commit came before the Makefile, because pytest fails
+  when there are no tests.
+- **Dropped the "duplicate ID across kinds" test.** The per-kind ID prefixes make that
+  case impossible.
+- **Validation is stricter than planned:**
+  - strict types
+  - non-blank text
+  - at least one distractor
+  - `affected_service` must be a known service
+  - metric points in time order
+  - finite metric values
+  - ASCII-digit IDs
+  - UTF-8 only, with no byte-order mark
+  - no duplicate JSON keys
+  - hidden `.json` files rejected
+  - an empty directory list rejected
+- **Images are pinned by digest** as well as tag. Postgres is 17.8.
+- **Not met yet:** the cert seed's causes are `log-001`/`log-002`, not spread through the
+  list as planned. The seeds get renumbered before the step-2 baseline is logged (see
+  the ARCHITECTURE.md failure-mode table).
