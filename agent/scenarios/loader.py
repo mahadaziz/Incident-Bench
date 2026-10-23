@@ -1,0 +1,56 @@
+from collections.abc import Iterable
+from pathlib import Path
+
+from pydantic import ValidationError
+
+from scenarios.schema import Scenario
+
+DATA_DIR = Path(__file__).parent / "data"
+DEV_DIR = DATA_DIR / "dev"
+
+
+class ScenarioLoadError(Exception):
+    pass
+
+
+def load_dir(path: Path) -> list[Scenario]:
+    return load_dirs([path])
+
+
+def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
+    loaded: dict[str, tuple[Scenario, Path]] = {}
+    for directory in paths:
+        for file in _scenario_files(directory):
+            scenario = _load_file(file)
+            if scenario.id in loaded:
+                other = loaded[scenario.id][1]
+                raise ScenarioLoadError(f"{file}: scenario id {scenario.id!r} also in {other}")
+            loaded[scenario.id] = (scenario, file)
+    return [scenario for _, (scenario, _) in sorted(loaded.items())]
+
+
+def _scenario_files(directory: Path) -> list[Path]:
+    if not directory.is_dir():
+        raise ScenarioLoadError(f"{directory}: not a directory")
+    # Anything that isn't a scenario is an error, so a misnamed file can't silently
+    # drop out of the scenario set.
+    files = []
+    for entry in sorted(directory.iterdir()):
+        if entry.name.startswith("."):
+            continue
+        if not entry.is_file() or entry.suffix != ".json":
+            raise ScenarioLoadError(f"{entry}: not a .json scenario file")
+        files.append(entry)
+    if not files:
+        raise ScenarioLoadError(f"{directory}: no scenarios found")
+    return files
+
+
+def _load_file(file: Path) -> Scenario:
+    try:
+        scenario = Scenario.model_validate_json(file.read_bytes())
+    except ValidationError as e:
+        raise ScenarioLoadError(f"{file}: {e}") from e
+    if file.stem != scenario.id:
+        raise ScenarioLoadError(f"{file}: filename must match scenario id {scenario.id!r}")
+    return scenario
