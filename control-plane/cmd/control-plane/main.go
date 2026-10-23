@@ -52,9 +52,6 @@ func run() error {
 
 	select {
 	case err := <-errCh:
-		if errors.Is(err, http.ErrServerClosed) {
-			return nil
-		}
 		return fmt.Errorf("serve: %w", err)
 	case <-ctx.Done():
 	}
@@ -65,6 +62,9 @@ func run() error {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shutdown: %w", err)
+	}
+	if err := <-errCh; !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("serve: %w", err)
 	}
 	return nil
 }
