@@ -31,21 +31,42 @@ HIDDEN_KEYS = [
 ]
 
 
+def _keys_and_strings(node: Any) -> tuple[set[str], list[str]]:
+    keys: set[str] = set()
+    strings: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            keys.add(key)
+            strings.append(key)
+            sub_keys, sub_strings = _keys_and_strings(value)
+            keys |= sub_keys
+            strings += sub_strings
+    elif isinstance(node, list):
+        for item in node:
+            sub_keys, sub_strings = _keys_and_strings(item)
+            keys |= sub_keys
+            strings += sub_strings
+    elif isinstance(node, str):
+        strings.append(node)
+    return keys, strings
+
+
+# Walks raw values, not JSON text: JSON escapes quotes, so a quoted secret would never match.
 def _assert_no_leak(scenario: Scenario, also_hidden: Iterable[str] = ()) -> None:
-    dumped = scenario.agent_view().model_dump_json()
+    keys, strings = _keys_and_strings(scenario.agent_view().model_dump(mode="json"))
     gt = scenario.ground_truth
 
+    assert not keys & set(HIDDEN_KEYS), f"agent view has hidden keys {keys & set(HIDDEN_KEYS)}"
     hidden = [
         scenario.id,
         scenario.title,
         gt.summary,
         *gt.acceptable_remediations,
         gt.root_cause.value,
-        *(f'"{key}"' for key in HIDDEN_KEYS),
         *also_hidden,
     ]
     for secret in hidden:
-        assert secret not in dumped, f"agent view leaks {secret!r}"
+        assert not any(secret in text for text in strings), f"agent view leaks {secret!r}"
 
 
 def test_agent_view_leaks_nothing_hidden(scenario_data: dict[str, Any]) -> None:
@@ -83,3 +104,12 @@ def test_agent_view_passes_evidence_through_unchanged(scenario_data: dict[str, A
     assert view.metrics == scenario.metrics
     assert view.deploys == scenario.deploys
     assert view.configs == scenario.configs
+
+
+def test_leak_check_catches_quoted_secrets(scenario_data: dict[str, Any]) -> None:
+    scenario_data["title"] = 'cleanup "PR #812" broke it'
+    scenario_data["logs"][0]["message"] = 'note: cleanup "PR #812" broke it'
+    scenario = Scenario.model_validate_json(json.dumps(scenario_data))
+
+    with pytest.raises(AssertionError, match="agent view leaks"):
+        _assert_no_leak(scenario)
