@@ -55,7 +55,7 @@ func run() error {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("serve: %w", err)
 	case <-ctx.Done():
 	}
 	// Restore default handling so a second Ctrl+C force-quits a stuck shutdown.
