@@ -125,6 +125,12 @@ def test_rejects_naive_timestamp(scenario_data: dict[str, Any], path: tuple[Any,
     _reject(scenario_data, "timezone")
 
 
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_rejects_non_finite_metric_value(scenario_data: dict[str, Any], value: float) -> None:
+    scenario_data["metrics"][0]["points"][0]["value"] = value
+    _reject(scenario_data, "finite number")
+
+
 def test_rejects_unknown_root_cause(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["root_cause"] = "cosmic_rays"
     _reject(scenario_data, "root_cause")

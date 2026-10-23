@@ -61,7 +61,7 @@ class LogLine(_Model):
 
 class MetricPoint(_Model):
     timestamp: AwareDatetime
-    value: float
+    value: float = Field(allow_inf_nan=False)
 
 
 class MetricSeries(_Model):
