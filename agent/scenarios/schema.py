@@ -102,13 +102,13 @@ class Budget(_Model):
     max_tokens: int = Field(gt=0)
 
 
+# No budget: it scales with difficulty, so showing it would leak difficulty.
 class AgentView(_Model):
     alert: Alert
     logs: tuple[LogLine, ...]
     metrics: tuple[MetricSeries, ...]
     deploys: tuple[Deploy, ...]
     configs: tuple[ConfigSnapshot, ...]
-    budget: Budget
 
 
 class Scenario(_Model):
@@ -142,7 +142,6 @@ class Scenario(_Model):
             metrics=self.metrics,
             deploys=self.deploys,
             configs=self.configs,
-            budget=self.budget,
         ).model_copy(deep=True)
 
     @model_validator(mode="after")

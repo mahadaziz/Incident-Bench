@@ -15,11 +15,19 @@ def test_agent_view_fields_are_exactly_the_allowlist() -> None:
         "metrics",
         "deploys",
         "configs",
-        "budget",
     }
 
 
-HIDDEN_KEYS = ["ground_truth", "required_evidence", "distractors", "difficulty", "source", "tags"]
+HIDDEN_KEYS = [
+    "ground_truth",
+    "required_evidence",
+    "distractors",
+    "difficulty",
+    "source",
+    "tags",
+    "max_steps",
+    "max_tokens",
+]
 
 
 def _assert_no_leak(scenario: Scenario, also_hidden: Iterable[str] = ()) -> None:
@@ -69,4 +77,3 @@ def test_agent_view_passes_evidence_through_unchanged(scenario_data: dict[str, A
     assert view.metrics == scenario.metrics
     assert view.deploys == scenario.deploys
     assert view.configs == scenario.configs
-    assert view.budget == scenario.budget
