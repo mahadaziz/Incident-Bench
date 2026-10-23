@@ -20,10 +20,12 @@ scenario JSON ──load_dir──► Scenario ──agent_view()──► Agent
 ```
 
 The agent only ever receives an `AgentView`. That's a separate type holding the alert and
-evidence, and nothing else. The budget stays out too: it scales with difficulty, so showing
-it would leak difficulty. The runtime enforces it instead. It's built field by field (an allowlist), so a
-field added to `Scenario` later stays hidden unless someone adds it on purpose. Ground
-truth goes only to the scorer.
+evidence, and nothing else. The view is built field by field (an allowlist), so a field
+added to `Scenario` later stays hidden unless someone adds it on purpose. Ground truth goes
+only to the scorer.
+
+The budget stays out of the view too: it scales with difficulty, so showing it would leak
+difficulty. The runtime enforces it instead.
 
 The dev/test split is defined by directory (`agent/scenarios/data/<split>/`), not by a
 field in the file. That way a split change shows up as a git file move, and the test
