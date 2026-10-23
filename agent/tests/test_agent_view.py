@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterable
 from typing import Any
 
@@ -39,7 +40,7 @@ def _assert_no_leak(scenario: Scenario, also_hidden: Iterable[str] = ()) -> None
 
 
 def test_agent_view_leaks_nothing_hidden(scenario_data: dict[str, Any]) -> None:
-    scenario = Scenario.model_validate(scenario_data)
+    scenario = Scenario.model_validate_json(json.dumps(scenario_data))
 
     _assert_no_leak(scenario, also_hidden=scenario.tags)
 
@@ -51,7 +52,7 @@ def test_seed_agent_view_leaks_nothing_hidden(scenario: Scenario) -> None:
 
 
 def test_agent_view_shares_no_mutable_state(scenario_data: dict[str, Any]) -> None:
-    scenario = Scenario.model_validate(scenario_data)
+    scenario = Scenario.model_validate_json(json.dumps(scenario_data))
 
     scenario.agent_view().configs[0].values["INVENTORY_URL"] = "tampered"
 
@@ -59,7 +60,7 @@ def test_agent_view_shares_no_mutable_state(scenario_data: dict[str, Any]) -> No
 
 
 def test_agent_view_passes_evidence_through_unchanged(scenario_data: dict[str, Any]) -> None:
-    scenario = Scenario.model_validate(scenario_data)
+    scenario = Scenario.model_validate_json(json.dumps(scenario_data))
 
     view = scenario.agent_view()
 

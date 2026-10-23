@@ -58,8 +58,9 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def _load_file(file: Path) -> Scenario:
     # Plain JSON parsing keeps the last of a repeated key, silently rewriting ground truth.
     try:
-        raw = json.loads(file.read_bytes(), object_pairs_hook=_reject_duplicate_keys)
-        scenario = Scenario.model_validate(raw)
+        data = file.read_bytes()
+        json.loads(data, object_pairs_hook=_reject_duplicate_keys)
+        scenario = Scenario.model_validate_json(data)
     except (ValueError, ValidationError) as e:
         raise ScenarioLoadError(f"{file}: {e}") from e
     if file.stem != scenario.id:
