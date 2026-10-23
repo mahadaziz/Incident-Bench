@@ -1,9 +1,8 @@
 name: ci
 
+# push only: push runs already report on PR head commits, so pull_request would double them.
 on:
   push:
-    branches: [main]
-  pull_request:
 
 permissions:
   contents: read
