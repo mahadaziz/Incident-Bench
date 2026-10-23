@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from scenarios.loader import DEV_DIR, load_file
+from scenarios.loader import DEV_DIR, load_file, scenario_files
 from scenarios.schema import AgentView, Scenario
 
 
@@ -55,7 +55,7 @@ def test_agent_view_leaks_nothing_hidden(scenario_data: dict[str, Any]) -> None:
 
 
 # Seed tags are plain words ("tls", "iam") that legitimately appear in evidence text.
-@pytest.mark.parametrize("path", sorted(DEV_DIR.glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", scenario_files(DEV_DIR), ids=lambda p: p.stem)
 def test_seed_agent_view_leaks_nothing_hidden(path: Path) -> None:
     _assert_no_leak(load_file(path))
 

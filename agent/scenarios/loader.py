@@ -23,7 +23,7 @@ def load_dir(path: Path) -> list[Scenario]:
 def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
     loaded: dict[str, tuple[Scenario, Path]] = {}
     for directory in paths:
-        for file in _scenario_files(directory):
+        for file in scenario_files(directory):
             scenario = load_file(file)
             if scenario.id in loaded:
                 other = loaded[scenario.id][1]
@@ -32,7 +32,7 @@ def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
     return [scenario for _, (scenario, _) in sorted(loaded.items())]
 
 
-def _scenario_files(directory: Path) -> list[Path]:
+def scenario_files(directory: Path) -> list[Path]:
     if not directory.is_dir():
         raise ScenarioLoadError(f"{directory}: not a directory")
     # Reject rather than skip, so a misnamed scenario can't silently drop out of the set.
