@@ -63,7 +63,7 @@
     },
     {
       "id": "log-008",
-      "timestamp": "2026-04-17T10:06:45Z",
+      "timestamp": "2026-04-17T10:06:12Z",
       "service": "order-service",
       "level": "WARN",
       "message": "slow transaction: OrderService.placeOrder held db connection for 13.1s (12.4s inside PaymentsClient.charge)"
