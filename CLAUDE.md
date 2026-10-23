@@ -18,8 +18,12 @@ The eval harness is the centerpiece. Protect its rigor before adding anything el
 I'm building this to learn AI engineering and system design, and I need to defend every
 part of it in interviews. So:
 
+- Explain everything simply and concisely, like I'm five: plain words, an everyday
+  analogy, then the real term. This covers plans, decisions, review findings, and step
+  summaries, not just the plan's first section.
 - Explain each non-obvious design decision and its tradeoff in a sentence or two.
-- Flag anything I should be able to explain in an interview.
+- Flag anything I should be able to explain in an interview, worded so I could say it
+  out loud.
 - Small commits, one concern each, following the format in Commits below.
 - Ask when something is ambiguous or a decision is mine, including mid-step.
 - A step is not done until its definition of done (see Build order) is met and shown.
