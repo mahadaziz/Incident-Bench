@@ -19,8 +19,9 @@ scenario JSON ──load_dir──► Scenario ──agent_view()──► Agent
                                └──── ground truth ───► scorer ◄─ report┘
 ```
 
-The agent only ever receives an `AgentView`. That's a separate type holding the alert,
-evidence, and budget, and nothing else. It's built field by field (an allowlist), so a
+The agent only ever receives an `AgentView`. That's a separate type holding the alert and
+evidence, and nothing else. The budget stays out too: it scales with difficulty, so showing
+it would leak difficulty. The runtime enforces it instead. It's built field by field (an allowlist), so a
 field added to `Scenario` later stays hidden unless someone adds it on purpose. Ground
 truth goes only to the scorer.
 
@@ -41,9 +42,14 @@ Each row names the test that proves the handling. A row with no test isn't handl
 | Typo in a field name (`distractor`) | Field silently dropped; scenario scores easier than intended | `extra="forbid"` on every model | `test_schema.py::test_rejects_unknown_field` |
 | Same JSON key twice in a scenario file | The parser keeps the last value, so a stray `"distractors": []` silently empties ground truth | Loader parses with a hook that rejects duplicate keys | `test_loader.py::test_rejects_duplicate_json_keys` |
 | NaN or Infinity in a metric | Loads fine but reaches the agent as `null`, so the agent sees different data than the file holds | `allow_inf_nan=False` on metric values | `test_schema.py::test_rejects_non_finite_metric_value` |
+| Wrong JSON type (`"difficulty": true`, `"max_steps": "10"`) | Lax parsing coerces it, so a typo in ground truth loads silently | Strict validation; JSON-mode parsing still reads ISO datetimes and enum values | `test_schema.py::test_rejects_wrong_json_type_instead_of_coercing` |
+| Blank text (`"summary": "   "`) | Scoring compares against an empty target | Every text field must contain a non-space character | `test_schema.py::test_rejects_blank_text` |
+| Scenario with no distractors | Scores easier than intended; breaks core rule 4 | `distractors` needs at least one ID | `test_schema.py::test_rejects_missing_distractors` |
+| `affected_service` typo | Every affected-service match fails for that scenario | Must name the alert's service or a service in the evidence | `test_schema.py::test_rejects_unknown_affected_service` |
 | Timestamp without a time zone | Event order is ambiguous, and event order is how a root cause is found | `AwareDatetime` on every timestamp | `test_schema.py::test_rejects_naive_timestamp` |
 | Same scenario id in two files (e.g. dev and test) | One silently overwrites the other; the scenario set and its hash are wrong | Loader rejects duplicate ids across directories | `test_loader.py::test_rejects_duplicate_id_across_directories` |
 | Filename doesn't match scenario id | Two files could claim the same id; audit trail confusing | Loader rejects the mismatch | `test_loader.py::test_rejects_filename_not_matching_id` |
 | Stray or misnamed file in a scenario directory | Scenario silently missing from the set | Loader rejects any entry that isn't a `.json` file (hidden non-JSON files like `.gitkeep` are skipped; hidden `.json` files are not) | `test_loader.py::test_rejects_non_scenario_entries`, `::test_rejects_hidden_json_file` |
+| Unreadable scenario file | Raw OS error escapes; callers can't tell which scenario broke | Loader wraps it as `ScenarioLoadError` naming the file | `test_loader.py::test_wraps_read_errors_naming_the_file` |
 | Empty or missing scenario directory | Eval "passes" on zero scenarios | Loader raises | `test_loader.py::test_rejects_empty_directory`, `::test_rejects_missing_directory` |
-| Ground truth, id, title, tags, difficulty, or source reaches the agent | Benchmark measures leakage, not investigation | `AgentView` has no such fields; leak check on fixture and every seed; the view is a deep copy, so the agent can't mutate the scorer's copy | `test_agent_view.py::test_agent_view_fields_are_exactly_the_allowlist`, `::test_agent_view_leaks_nothing_hidden`, `::test_seed_agent_view_leaks_nothing_hidden`, `::test_agent_view_shares_no_mutable_state` |
+| Ground truth, id, title, tags, difficulty (directly or via budget), or source reaches the agent | Benchmark measures leakage, not investigation | `AgentView` has no such fields; leak check on fixture and every seed; the view is a deep copy, so the agent can't mutate the scorer's copy | `test_agent_view.py::test_agent_view_fields_are_exactly_the_allowlist`, `::test_agent_view_leaks_nothing_hidden`, `::test_seed_agent_view_leaks_nothing_hidden`, `::test_agent_view_shares_no_mutable_state` |
