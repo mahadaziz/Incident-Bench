@@ -249,7 +249,9 @@ chore(infra): pin postgres and redis images in compose
 
 `agent/scenarios/schema.py` is the source of truth; `agent/scenarios/loader.py` loads
 `agent/scenarios/data/<split>/<scenario-id>.json`. The three seed scenarios live in
-`data/dev/`.
+`data/dev/`: renamed env var after a deploy (difficulty 1), connection pool exhaustion
+from a slow payments gateway (2), cert expiry from a broken renewal after an IAM change
+with a red-herring deploy and CPU spike (3).
 
 ## Known open problem
 
