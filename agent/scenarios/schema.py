@@ -1,0 +1,206 @@
+from collections import Counter
+from collections.abc import Iterator
+from datetime import datetime, timedelta
+from enum import StrEnum
+from itertools import pairwise
+from typing import Annotated, Literal, Self
+
+from pydantic import (
+    AfterValidator,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
+
+
+class _Model(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+
+class Source(StrEnum):
+    REAL = "real"
+    SYNTHETIC = "synthetic"
+
+
+class RootCause(StrEnum):
+    BAD_DEPLOY = "bad_deploy"
+    CONFIG_ERROR = "config_error"
+    DEPENDENCY_SLOWDOWN = "dependency_slowdown"
+    CERT_EXPIRY = "cert_expiry"
+    RESOURCE_EXHAUSTION = "resource_exhaustion"
+    TRAFFIC_SPIKE = "traffic_spike"
+    DATA_ISSUE = "data_issue"
+    INFRA_FAILURE = "infra_failure"
+
+
+def _require_utc(value: datetime) -> datetime:
+    if value.utcoffset() != timedelta(0):
+        raise ValueError("timestamp must be UTC (Z or +00:00)")
+    return value
+
+
+# One offset everywhere, so ordering by timestamp text can't misplace an event.
+UtcDatetime = Annotated[AwareDatetime, AfterValidator(_require_utc)]
+Text = Annotated[str, StringConstraints(pattern=r"\S")]
+ConfigKey = Annotated[str, StringConstraints(pattern=r"^\S(?:.*\S)?$")]
+Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
+ScenarioId = Slug
+# Tools look services and metrics up by exact name, so stray spaces or capitals hide evidence.
+ServiceName = Slug
+MetricName = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$")]
+# Opaque ids (kind + number, one spelling: never log-0001) can't leak answers or look alike.
+_NUMBER = r"(?:[0-9]{3}|[1-9][0-9]{3,})"
+LogId = Annotated[str, StringConstraints(pattern=rf"^log-{_NUMBER}$")]
+MetricId = Annotated[str, StringConstraints(pattern=rf"^met-{_NUMBER}$")]
+DeployId = Annotated[str, StringConstraints(pattern=rf"^dep-{_NUMBER}$")]
+ConfigId = Annotated[str, StringConstraints(pattern=rf"^cfg-{_NUMBER}$")]
+EvidenceId = Annotated[str, StringConstraints(pattern=rf"^(?:log|met|dep|cfg)-{_NUMBER}$")]
+EvidenceGroup = Annotated[tuple[EvidenceId, ...], Field(min_length=1)]
+
+
+class Alert(_Model):
+    name: Text
+    service: ServiceName
+    severity: Literal["critical", "warning", "info"]
+    fired_at: UtcDatetime
+    summary: Text
+
+
+class LogLine(_Model):
+    id: LogId
+    timestamp: UtcDatetime
+    service: ServiceName
+    level: Literal["DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
+    message: Text
+
+
+class MetricPoint(_Model):
+    timestamp: UtcDatetime
+    value: float = Field(allow_inf_nan=False)
+
+
+class MetricSeries(_Model):
+    id: MetricId
+    name: MetricName
+    service: ServiceName
+    unit: Text
+    points: tuple[MetricPoint, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check_points_in_time_order(self) -> Self:
+        times = [p.timestamp for p in self.points]
+        if any(a >= b for a, b in pairwise(times)):
+            raise ValueError(f"metric {self.id}: point timestamps must strictly increase")
+        return self
+
+
+class Deploy(_Model):
+    id: DeployId
+    service: ServiceName
+    version: Text
+    timestamp: UtcDatetime
+    author: Text
+    description: Text
+
+
+class ConfigSnapshot(_Model):
+    id: ConfigId
+    service: ServiceName
+    captured_at: UtcDatetime
+    values: dict[ConfigKey, str] = Field(min_length=1)
+
+
+class GroundTruth(_Model):
+    root_cause: RootCause
+    summary: Text
+    affected_service: ServiceName
+    # One group per causal fact; citing any id in a group covers that fact.
+    required_evidence: tuple[EvidenceGroup, ...] = Field(min_length=1)
+    distractors: tuple[EvidenceId, ...] = Field(min_length=1)
+    acceptable_remediations: tuple[Text, ...] = Field(min_length=1)
+
+    def required_ids(self) -> tuple[str, ...]:
+        return tuple(i for group in self.required_evidence for i in group)
+
+
+class Budget(_Model):
+    max_steps: int = Field(gt=0)
+    max_tokens: int = Field(gt=0)
+
+
+# No budget: it scales with difficulty, so showing it would leak difficulty.
+class AgentView(_Model):
+    alert: Alert
+    logs: tuple[LogLine, ...]
+    metrics: tuple[MetricSeries, ...]
+    deploys: tuple[Deploy, ...]
+    configs: tuple[ConfigSnapshot, ...]
+
+
+class Scenario(_Model):
+    id: ScenarioId
+    title: Text
+    source: Source
+    difficulty: int = Field(ge=1, le=3)
+    tags: tuple[Text, ...] = ()
+    alert: Alert
+    logs: tuple[LogLine, ...] = ()
+    metrics: tuple[MetricSeries, ...] = ()
+    deploys: tuple[Deploy, ...] = ()
+    configs: tuple[ConfigSnapshot, ...] = ()
+    ground_truth: GroundTruth
+    budget: Budget
+
+    def _evidence(self) -> Iterator[LogLine | MetricSeries | Deploy | ConfigSnapshot]:
+        yield from self.logs
+        yield from self.metrics
+        yield from self.deploys
+        yield from self.configs
+
+    def evidence_ids(self) -> frozenset[str]:
+        return frozenset(item.id for item in self._evidence())
+
+    # Allowlist, not a copy-and-strip: a field added to Scenario later stays hidden by default.
+    def agent_view(self) -> AgentView:
+        return AgentView(
+            alert=self.alert,
+            logs=self.logs,
+            metrics=self.metrics,
+            deploys=self.deploys,
+            configs=self.configs,
+        ).model_copy(deep=True)
+
+    @model_validator(mode="after")
+    def _check_evidence_ids(self) -> Self:
+        gt = self.ground_truth
+        problems = []
+
+        id_counts = Counter(item.id for item in self._evidence())
+        if dupes := sorted(i for i, n in id_counts.items() if n > 1):
+            problems.append(f"duplicate evidence ids {dupes}")
+
+        for field, ids in (
+            ("required_evidence", gt.required_ids()),
+            ("distractors", gt.distractors),
+        ):
+            if dupes := sorted(i for i, n in Counter(ids).items() if n > 1):
+                problems.append(f"ground_truth.{field} repeats {dupes}")
+            if unknown := sorted(set(ids) - id_counts.keys()):
+                problems.append(f"ground_truth.{field} references unknown ids {unknown}")
+
+        if overlap := sorted(set(gt.required_ids()) & set(gt.distractors)):
+            problems.append(f"ids are both required evidence and distractors {overlap}")
+
+        services = {self.alert.service} | {item.service for item in self._evidence()}
+        if gt.affected_service not in services:
+            problems.append(
+                f"ground_truth.affected_service {gt.affected_service!r} is not a service "
+                "named in the alert or evidence"
+            )
+
+        if problems:
+            raise ValueError(f"scenario {self.id!r}: " + "; ".join(problems))
+        return self

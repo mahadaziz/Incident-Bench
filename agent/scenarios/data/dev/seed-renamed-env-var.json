@@ -1,0 +1,153 @@
+{
+  "id": "seed-renamed-env-var",
+  "title": "Checkout down after env var rename surfaces on routine deploy",
+  "source": "synthetic",
+  "difficulty": 1,
+  "tags": ["env-var", "startup-crash", "seed"],
+  "alert": {
+    "name": "CheckoutServiceDown",
+    "service": "checkout-service",
+    "severity": "critical",
+    "fired_at": "2026-03-04T14:06:00Z",
+    "summary": "checkout-service has 0 of 3 replicas healthy"
+  },
+  "logs": [
+    {
+      "id": "log-001",
+      "timestamp": "2026-03-04T13:41:02Z",
+      "service": "search-service",
+      "level": "INFO",
+      "message": "started v1.19.0 with synonym expansion enabled"
+    },
+    {
+      "id": "log-002",
+      "timestamp": "2026-03-04T13:52:17Z",
+      "service": "config-sync",
+      "level": "INFO",
+      "message": "applied env revision r118 to checkout-service: removed DATABASE_URL, added DB_URL (platform naming cleanup PLAT-2291)"
+    },
+    {
+      "id": "log-003",
+      "timestamp": "2026-03-04T13:58:10Z",
+      "service": "checkout-service",
+      "level": "INFO",
+      "message": "POST /checkout 200 in 182ms"
+    },
+    {
+      "id": "log-004",
+      "timestamp": "2026-03-04T14:00:05Z",
+      "service": "deploy-controller",
+      "level": "INFO",
+      "message": "deploying checkout-service v3.4.1 with strategy Recreate: stopping 3 old replicas, starting 3 new"
+    },
+    {
+      "id": "log-005",
+      "timestamp": "2026-03-04T14:00:41Z",
+      "service": "checkout-service",
+      "level": "FATAL",
+      "message": "startup failed: required environment variable DATABASE_URL is not set"
+    },
+    {
+      "id": "log-006",
+      "timestamp": "2026-03-04T14:00:42Z",
+      "service": "kubelet",
+      "level": "WARN",
+      "message": "pod checkout-service-7f9c6-2xk4p: back-off restarting failed container, exit code 1"
+    },
+    {
+      "id": "log-007",
+      "timestamp": "2026-03-04T14:03:12Z",
+      "service": "search-service",
+      "level": "WARN",
+      "message": "query on products_index took 1240ms (synonym expansion produced 14 terms)"
+    },
+    {
+      "id": "log-008",
+      "timestamp": "2026-03-04T14:04:55Z",
+      "service": "api-gateway",
+      "level": "ERROR",
+      "message": "upstream checkout-service unavailable: no healthy endpoints"
+    }
+  ],
+  "metrics": [
+    {
+      "id": "met-001",
+      "name": "healthy_replicas",
+      "service": "checkout-service",
+      "unit": "count",
+      "points": [
+        {"timestamp": "2026-03-04T13:50:00Z", "value": 3},
+        {"timestamp": "2026-03-04T13:55:00Z", "value": 3},
+        {"timestamp": "2026-03-04T14:00:00Z", "value": 3},
+        {"timestamp": "2026-03-04T14:02:00Z", "value": 0},
+        {"timestamp": "2026-03-04T14:04:00Z", "value": 0},
+        {"timestamp": "2026-03-04T14:06:00Z", "value": 0}
+      ]
+    },
+    {
+      "id": "met-002",
+      "name": "http_request_duration_p95",
+      "service": "search-service",
+      "unit": "ms",
+      "points": [
+        {"timestamp": "2026-03-04T13:30:00Z", "value": 210},
+        {"timestamp": "2026-03-04T13:45:00Z", "value": 340},
+        {"timestamp": "2026-03-04T14:00:00Z", "value": 365},
+        {"timestamp": "2026-03-04T14:05:00Z", "value": 355}
+      ]
+    }
+  ],
+  "deploys": [
+    {
+      "id": "dep-001",
+      "service": "search-service",
+      "version": "v1.19.0",
+      "timestamp": "2026-03-04T13:40:00Z",
+      "author": "priya.n",
+      "description": "Add synonym expansion to product search queries"
+    },
+    {
+      "id": "dep-002",
+      "service": "checkout-service",
+      "version": "v3.4.1",
+      "timestamp": "2026-03-04T14:00:00Z",
+      "author": "ci-bot",
+      "description": "Release v3.4.1: bump http client to 4.2, copy changes to receipt email. No settings or config-loading changes."
+    }
+  ],
+  "configs": [
+    {
+      "id": "cfg-001",
+      "service": "checkout-service",
+      "captured_at": "2026-03-04T13:30:00Z",
+      "values": {
+        "DATABASE_URL": "postgres://checkout@db-primary:5432/checkout",
+        "PAYMENTS_BASE_URL": "https://payments.internal:8443",
+        "LOG_LEVEL": "info"
+      }
+    },
+    {
+      "id": "cfg-002",
+      "service": "checkout-service",
+      "captured_at": "2026-03-04T14:05:00Z",
+      "values": {
+        "DB_URL": "postgres://checkout@db-primary:5432/checkout",
+        "PAYMENTS_BASE_URL": "https://payments.internal:8443",
+        "LOG_LEVEL": "info"
+      }
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "config_error",
+    "summary": "A platform config cleanup (env revision r118) renamed DATABASE_URL to DB_URL in checkout-service's environment, but the service still reads DATABASE_URL. Running pods were unaffected until the routine v3.4.1 rollout restarted them; every new replica then failed at startup. The release itself changed no config handling, so rolling it back would not help.",
+    "affected_service": "checkout-service",
+    "required_evidence": [["log-002", "cfg-002"], ["log-005"]],
+    "distractors": ["dep-001", "log-001", "met-002", "log-007"],
+    "acceptable_remediations": [
+      "Restore DATABASE_URL in checkout-service's environment config (alongside or instead of DB_URL) and restart the pods",
+      "Revert env revision r118 for checkout-service",
+      "Change checkout-service to read DB_URL and redeploy"
+    ]
+  },
+  "budget": {"max_steps": 10, "max_tokens": 40000}
+}

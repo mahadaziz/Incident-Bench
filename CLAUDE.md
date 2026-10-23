@@ -2,9 +2,11 @@
 
 Guidance for Claude Code (claude.ai/code) working in this repository.
 
-**Current status:** build order step 1, nothing implemented yet. Everything marked
-(planned) below, plus `results/` and `ARCHITECTURE.md`, does not exist until its step
-lands. Update this line as steps complete.
+**Current status:** step 1 done (skeleton, Makefile, Compose, CI, scenario schema and
+loader, three seed scenarios, `ARCHITECTURE.md`). Next is step 2. Everything marked
+(planned) below, plus `results/`, does not exist until its step lands. Before the step-2
+baseline is logged, renumber the seed evidence IDs (see `ARCHITECTURE.md`). Update this
+line as steps complete.
 
 An AI on-call incident investigator, and a published benchmark that measures it. An
 alert fires, a durable queue picks it up, an agent investigates with read-only tools,
@@ -63,23 +65,21 @@ part of it in interviews. So:
 
 ## Commands
 
-(planned — created in step 1; drop this marker when the Makefile lands)
-
 | Command | Does |
 |---|---|
 | `make setup` | `uv sync` in `agent/`, `go mod download` in `control-plane/` |
 | `make test` | Both suites. Go runs with `-race`. Required before every commit once the Makefile exists |
 | `make test-py` / `make test-go` | One side only |
-| `make lint` | `ruff check` + `gofmt -l` + `go vet` |
-| `make fmt` | `ruff format` + `gofmt -w` |
+| `make lint` | `ruff check` + `ruff format --check` + `gofmt -l` + `go vet` |
+| `make fmt` | `ruff check --fix-only` + `ruff format` + `gofmt -w` |
 | `make up` / `make down` | Docker Compose: Postgres+pgvector, Redis 7 |
-| `make eval` | Full eval run; writes a log to `results/` |
+| `make eval` | (planned, step 2) Full eval run; writes a log to `results/` |
 
 Narrow the loop while iterating:
 
-- One Python test: `cd agent && uv run pytest tests/test_scorer.py::test_name -x`
+- One Python test: `cd agent && uv run --locked pytest tests/test_scorer.py::test_name -x`
 - One Go test: `cd control-plane && go test -race -run TestName ./internal/queue/`
-- One scenario: `cd agent && uv run python -m evals.run --scenario <id>` (dev split
+- One scenario (planned, step 2): `cd agent && uv run --locked python -m evals.run --scenario <id>` (dev split
   only, not logged to `results/`)
 
 ## Environment
@@ -247,19 +247,13 @@ eval: log naive baseline on 3 seed scenarios
 chore(infra): pin postgres and redis images in compose
 ```
 
-## Scenario schema (Python, pydantic v2)
+## Scenario schema
 
-Spec only, until step 1 lands. Once `agent/scenarios/schema.py` exists it is the source
-of truth. Trim this section to a pointer rather than maintaining both.
-
-Scenario: id, title, source (real|synthetic), difficulty 1-3, tags, alert, logs,
-metrics, deploys, configs, ground_truth, budget.
-GroundTruth: root_cause (enum: bad_deploy, config_error, dependency_slowdown,
-cert_expiry, resource_exhaustion, traffic_spike, data_issue, infra_failure), summary,
-affected_service, required_evidence, distractors, acceptable_remediations.
-Seed scenarios: renamed env var after a deploy (difficulty 1), connection pool
-exhaustion from a slow payments gateway (2), cert expiry from a broken renewal after an
-IAM change with a red-herring deploy and CPU spike (3).
+`agent/scenarios/schema.py` is the source of truth; `agent/scenarios/loader.py` loads
+`agent/scenarios/data/<split>/<scenario-id>.json`. The three seed scenarios live in
+`data/dev/`: renamed env var after a deploy (difficulty 1), connection pool exhaustion
+from a slow payments gateway (2), cert expiry from a broken renewal after an IAM change
+with a red-herring deploy and CPU spike (3).
 
 ## Known open problem
 
