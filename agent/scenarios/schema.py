@@ -35,7 +35,10 @@ class RootCause(StrEnum):
 
 
 Text = Annotated[str, StringConstraints(pattern=r"\S")]
-ScenarioId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
+Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
+ScenarioId = Slug
+# Tools will look services up by exact name, so stray spaces or capitals would hide evidence.
+ServiceName = Slug
 # Evidence ids must stay opaque (kind + number): a descriptive id would leak the answer.
 LogId = Annotated[str, StringConstraints(pattern=r"^log-[0-9]{3,}$")]
 MetricId = Annotated[str, StringConstraints(pattern=r"^met-[0-9]{3,}$")]
@@ -47,7 +50,7 @@ EvidenceGroup = Annotated[tuple[EvidenceId, ...], Field(min_length=1)]
 
 class Alert(_Model):
     name: Text
-    service: Text
+    service: ServiceName
     severity: Literal["critical", "warning", "info"]
     fired_at: AwareDatetime
     summary: Text
@@ -56,7 +59,7 @@ class Alert(_Model):
 class LogLine(_Model):
     id: LogId
     timestamp: AwareDatetime
-    service: Text
+    service: ServiceName
     level: Literal["DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
     message: Text
 
@@ -69,7 +72,7 @@ class MetricPoint(_Model):
 class MetricSeries(_Model):
     id: MetricId
     name: Text
-    service: Text
+    service: ServiceName
     unit: Text
     points: tuple[MetricPoint, ...] = Field(min_length=1)
 
@@ -83,7 +86,7 @@ class MetricSeries(_Model):
 
 class Deploy(_Model):
     id: DeployId
-    service: Text
+    service: ServiceName
     version: Text
     timestamp: AwareDatetime
     author: Text
@@ -92,7 +95,7 @@ class Deploy(_Model):
 
 class ConfigSnapshot(_Model):
     id: ConfigId
-    service: Text
+    service: ServiceName
     captured_at: AwareDatetime
     values: dict[str, str] = Field(min_length=1)
 
@@ -100,7 +103,7 @@ class ConfigSnapshot(_Model):
 class GroundTruth(_Model):
     root_cause: RootCause
     summary: Text
-    affected_service: Text
+    affected_service: ServiceName
     # One group per causal fact; citing any id in a group covers that fact.
     required_evidence: tuple[EvidenceGroup, ...] = Field(min_length=1)
     distractors: tuple[EvidenceId, ...] = Field(min_length=1)

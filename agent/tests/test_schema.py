@@ -255,3 +255,27 @@ def test_rejects_malformed_scenario_id(scenario_data: dict[str, Any], bad_id: st
 def test_rejects_non_positive_budget(scenario_data: dict[str, Any], field: str) -> None:
     scenario_data["budget"][field] = 0
     _reject_field(scenario_data, ("budget", field), "greater_than")
+
+
+@pytest.mark.parametrize(
+    "bad", ["Search-Service", "order-service ", " order-service", "order_service"]
+)
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("alert", "service"),
+        ("logs", 0, "service"),
+        ("metrics", 0, "service"),
+        ("deploys", 0, "service"),
+        ("configs", 0, "service"),
+        ("ground_truth", "affected_service"),
+    ],
+)
+def test_rejects_non_slug_service_name(
+    scenario_data: dict[str, Any], path: tuple[Any, ...], bad: str
+) -> None:
+    target: Any = scenario_data
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = bad
+    _reject_field(scenario_data, path, "string_pattern_mismatch")
