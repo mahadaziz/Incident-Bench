@@ -53,6 +53,8 @@ func run() error {
 		return err
 	case <-ctx.Done():
 	}
+	// Restore default handling so a second Ctrl+C force-quits a stuck shutdown.
+	stop()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
