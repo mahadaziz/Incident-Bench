@@ -35,8 +35,7 @@ def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
 def _scenario_files(directory: Path) -> list[Path]:
     if not directory.is_dir():
         raise ScenarioLoadError(f"{directory}: not a directory")
-    # Anything that isn't a scenario is an error, so a misnamed file can't silently
-    # drop out of the scenario set.
+    # Reject rather than skip, so a misnamed scenario can't silently drop out of the set.
     files = []
     for entry in sorted(directory.iterdir()):
         if entry.name.startswith(".") and entry.suffix != ".json":

@@ -1,5 +1,4 @@
-# Plain `bash` on Windows resolves to the WSL launcher and make falls back to cmd.exe,
-# so point at Git Bash by its short path (make can't take the space in "Program Files").
+# Windows `bash` is the WSL launcher; use Git Bash by short path (make can't take spaces).
 ifeq ($(OS),Windows_NT)
 SHELL := C:/PROGRA~1/Git/bin/bash.exe
 else
