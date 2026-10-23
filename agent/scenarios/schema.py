@@ -36,11 +36,11 @@ class RootCause(StrEnum):
 Text = Annotated[str, StringConstraints(min_length=1)]
 ScenarioId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 # Evidence ids must stay opaque (kind + number): a descriptive id would leak the answer.
-LogId = Annotated[str, StringConstraints(pattern=r"^log-\d{3,}$")]
-MetricId = Annotated[str, StringConstraints(pattern=r"^met-\d{3,}$")]
-DeployId = Annotated[str, StringConstraints(pattern=r"^dep-\d{3,}$")]
-ConfigId = Annotated[str, StringConstraints(pattern=r"^cfg-\d{3,}$")]
-EvidenceId = Annotated[str, StringConstraints(pattern=r"^(log|met|dep|cfg)-\d{3,}$")]
+LogId = Annotated[str, StringConstraints(pattern=r"^log-[0-9]{3,}$")]
+MetricId = Annotated[str, StringConstraints(pattern=r"^met-[0-9]{3,}$")]
+DeployId = Annotated[str, StringConstraints(pattern=r"^dep-[0-9]{3,}$")]
+ConfigId = Annotated[str, StringConstraints(pattern=r"^cfg-[0-9]{3,}$")]
+EvidenceId = Annotated[str, StringConstraints(pattern=r"^(log|met|dep|cfg)-[0-9]{3,}$")]
 
 
 class Alert(_Model):

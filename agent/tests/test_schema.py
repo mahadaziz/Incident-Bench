@@ -66,6 +66,7 @@ def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
         ("logs", "dep-001"),
         ("logs", "log-1"),
         ("logs", "log-cert-expired"),
+        ("logs", "log-١٢٣"),
         ("metrics", "log-005"),
         ("deploys", "dep-latest"),
         ("configs", "config-001"),
@@ -78,8 +79,9 @@ def test_rejects_malformed_evidence_id(
     _reject(scenario_data, "String should match pattern")
 
 
-def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any]) -> None:
-    scenario_data["ground_truth"]["required_evidence"] = ["the-bad-deploy"]
+@pytest.mark.parametrize("bad_id", ["the-bad-deploy", "log-١٢٣"])
+def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any], bad_id: str) -> None:
+    scenario_data["ground_truth"]["required_evidence"] = [bad_id]
     _reject(scenario_data, "String should match pattern")
 
 
