@@ -213,6 +213,12 @@ def test_accepts_integer_metric_values(scenario_data: dict[str, Any]) -> None:
     _ = Scenario.model_validate_json(json.dumps(scenario_data))
 
 
+@pytest.mark.parametrize("second", ["2026-01-10T11:59:00Z", "2026-01-10T12:00:00Z"])
+def test_rejects_unordered_metric_points(scenario_data: dict[str, Any], second: str) -> None:
+    scenario_data["metrics"][0]["points"][1]["timestamp"] = second
+    _reject(scenario_data, "point timestamps must strictly increase")
+
+
 def test_rejects_unknown_root_cause(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["root_cause"] = "cosmic_rays"
     _reject(scenario_data, "root_cause")

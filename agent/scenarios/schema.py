@@ -72,6 +72,13 @@ class MetricSeries(_Model):
     unit: Text
     points: tuple[MetricPoint, ...] = Field(min_length=1)
 
+    @model_validator(mode="after")
+    def _check_points_in_time_order(self) -> Self:
+        times = [p.timestamp for p in self.points]
+        if any(a >= b for a, b in zip(times, times[1:], strict=False)):
+            raise ValueError(f"metric {self.id}: point timestamps must strictly increase")
+        return self
+
 
 class Deploy(_Model):
     id: DeployId
