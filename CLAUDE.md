@@ -77,7 +77,7 @@ Narrow the loop while iterating:
 
 - One Python test: `cd agent && uv run pytest tests/test_scorer.py::test_name -x`
 - One Go test: `cd control-plane && go test -race -run TestName ./internal/queue/`
-- One scenario: `cd agent && uv run python -m evals.run --scenario <id>` (dev split
+- One scenario (planned, step 2): `cd agent && uv run python -m evals.run --scenario <id>` (dev split
   only, not logged to `results/`)
 
 ## Environment
