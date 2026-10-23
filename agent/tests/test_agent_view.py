@@ -50,6 +50,14 @@ def test_seed_agent_view_leaks_nothing_hidden(scenario: Scenario) -> None:
     _assert_no_leak(scenario)
 
 
+def test_agent_view_shares_no_mutable_state(scenario_data: dict[str, Any]) -> None:
+    scenario = Scenario.model_validate(scenario_data)
+
+    scenario.agent_view().configs[0].values["INVENTORY_URL"] = "tampered"
+
+    assert scenario.configs[0].values["INVENTORY_URL"] == "http://inventory:9000"
+
+
 def test_agent_view_passes_evidence_through_unchanged(scenario_data: dict[str, Any]) -> None:
     scenario = Scenario.model_validate(scenario_data)
 

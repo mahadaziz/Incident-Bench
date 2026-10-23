@@ -143,7 +143,7 @@ class Scenario(_Model):
             deploys=self.deploys,
             configs=self.configs,
             budget=self.budget,
-        )
+        ).model_copy(deep=True)
 
     @model_validator(mode="after")
     def _check_evidence_ids(self) -> Self:
