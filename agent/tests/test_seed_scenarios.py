@@ -1,5 +1,5 @@
 from scenarios.loader import DEV_DIR, load_dir
-from scenarios.schema import RootCause
+from scenarios.schema import RootCause, Source
 
 SEED_IDS = {
     "seed-renamed-env-var": (1, RootCause.CONFIG_ERROR),
@@ -15,3 +15,4 @@ def test_seed_scenarios_validate() -> None:
     for seed_id, expected in SEED_IDS.items():
         seed = dev[seed_id]
         assert (seed.difficulty, seed.ground_truth.root_cause) == expected
+        assert seed.source is Source.SYNTHETIC
