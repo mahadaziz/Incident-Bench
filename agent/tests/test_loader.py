@@ -130,6 +130,11 @@ def test_wraps_read_errors_naming_the_file(
         load_dir(tmp_path)
 
 
+def test_rejects_empty_directory_list() -> None:
+    with pytest.raises(ScenarioLoadError, match="no scenario directories given"):
+        load_dirs([])
+
+
 def test_rejects_empty_directory(tmp_path: Path) -> None:
     with pytest.raises(ScenarioLoadError, match="no scenarios found"):
         load_dir(tmp_path)

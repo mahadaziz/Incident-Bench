@@ -30,6 +30,8 @@ def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
                 other = loaded[scenario.id][1]
                 raise ScenarioLoadError(f"{file}: scenario id {scenario.id!r} also in {other}")
             loaded[scenario.id] = (scenario, file)
+    if not loaded:
+        raise ScenarioLoadError("no scenario directories given")
     return [scenario for _, (scenario, _) in sorted(loaded.items())]
 
 
