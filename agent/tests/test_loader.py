@@ -63,6 +63,16 @@ def test_rejects_duplicate_json_keys(tmp_path: Path, scenario_data: dict[str, An
         load_dir(tmp_path)
 
 
+def test_rejects_byte_order_mark_with_a_clear_message(
+    tmp_path: Path, scenario_data: dict[str, Any]
+) -> None:
+    file = _write(tmp_path, scenario_data)
+    file.write_bytes(b"\xef\xbb\xbf" + file.read_bytes())
+
+    with pytest.raises(ScenarioLoadError, match="byte-order mark"):
+        load_dir(tmp_path)
+
+
 def test_rejects_invalid_scenario_naming_the_file(
     tmp_path: Path, scenario_data: dict[str, Any]
 ) -> None:
