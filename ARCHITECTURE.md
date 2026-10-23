@@ -31,6 +31,13 @@ The dev/test split is defined by directory (`agent/scenarios/data/<split>/`), no
 field in the file. That way a split change shows up as a git file move, and the test
 directory can be blocked from reads.
 
+Each scenario has exactly one `root_cause` label. When an incident fits more than one
+category, the label is the earliest link in the causal chain that, if removed, would have
+prevented the incident. A slow payments provider that exhausts a connection pool is
+`dependency_slowdown`, not `resource_exhaustion`; a renamed env var exposed by a routine
+deploy is `config_error`, not `bad_deploy`. Writing the rule down keeps the root-cause
+metric from being a judgment call per scenario, and the step-2 prompt should state it.
+
 ## Failure modes
 
 Each row names the test that proves the handling. A row with no test isn't handled yet.
