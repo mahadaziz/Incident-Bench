@@ -302,3 +302,24 @@ def test_accepts_config_key(scenario_data: dict[str, Any], good_key: str) -> Non
 def test_rejects_non_snake_case_metric_name(scenario_data: dict[str, Any], bad: str) -> None:
     scenario_data["metrics"][0]["name"] = bad
     _reject_field(scenario_data, ("metrics", 0, "name"), "string_pattern_mismatch")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("alert", "fired_at"),
+        ("logs", 0, "timestamp"),
+        ("metrics", 0, "points", 0, "timestamp"),
+        ("deploys", 0, "timestamp"),
+        ("configs", 0, "captured_at"),
+    ],
+)
+def test_rejects_non_utc_timestamp(scenario_data: dict[str, Any], path: tuple[Any, ...]) -> None:
+    _set_at(scenario_data, path, "2026-01-10T17:00:00+05:00")
+    _reject_field(scenario_data, path, "value_error")
+
+
+def test_accepts_explicit_zero_offset(scenario_data: dict[str, Any]) -> None:
+    scenario_data["alert"]["fired_at"] = "2026-01-10T12:05:00+00:00"
+
+    _ = Scenario.model_validate_json(json.dumps(scenario_data))

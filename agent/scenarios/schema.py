@@ -1,10 +1,12 @@
 from collections import Counter
 from collections.abc import Iterator
+from datetime import datetime, timedelta
 from enum import StrEnum
 from itertools import pairwise
 from typing import Annotated, Literal, Self
 
 from pydantic import (
+    AfterValidator,
     AwareDatetime,
     BaseModel,
     ConfigDict,
@@ -34,6 +36,14 @@ class RootCause(StrEnum):
     INFRA_FAILURE = "infra_failure"
 
 
+def _require_utc(value: datetime) -> datetime:
+    if value.utcoffset() != timedelta(0):
+        raise ValueError("timestamp must be UTC (Z or +00:00)")
+    return value
+
+
+# One offset everywhere, so ordering by timestamp text can't misplace an event.
+UtcDatetime = Annotated[AwareDatetime, AfterValidator(_require_utc)]
 Text = Annotated[str, StringConstraints(pattern=r"\S")]
 ConfigKey = Annotated[str, StringConstraints(pattern=r"^\S(?:.*\S)?$")]
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
@@ -55,20 +65,20 @@ class Alert(_Model):
     name: Text
     service: ServiceName
     severity: Literal["critical", "warning", "info"]
-    fired_at: AwareDatetime
+    fired_at: UtcDatetime
     summary: Text
 
 
 class LogLine(_Model):
     id: LogId
-    timestamp: AwareDatetime
+    timestamp: UtcDatetime
     service: ServiceName
     level: Literal["DEBUG", "INFO", "WARN", "ERROR", "FATAL"]
     message: Text
 
 
 class MetricPoint(_Model):
-    timestamp: AwareDatetime
+    timestamp: UtcDatetime
     value: float = Field(allow_inf_nan=False)
 
 
@@ -91,7 +101,7 @@ class Deploy(_Model):
     id: DeployId
     service: ServiceName
     version: Text
-    timestamp: AwareDatetime
+    timestamp: UtcDatetime
     author: Text
     description: Text
 
@@ -99,7 +109,7 @@ class Deploy(_Model):
 class ConfigSnapshot(_Model):
     id: ConfigId
     service: ServiceName
-    captured_at: AwareDatetime
+    captured_at: UtcDatetime
     values: dict[ConfigKey, str] = Field(min_length=1)
 
 
