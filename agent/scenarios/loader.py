@@ -24,7 +24,7 @@ def load_dirs(paths: Iterable[Path]) -> list[Scenario]:
     loaded: dict[str, tuple[Scenario, Path]] = {}
     for directory in paths:
         for file in _scenario_files(directory):
-            scenario = _load_file(file)
+            scenario = load_file(file)
             if scenario.id in loaded:
                 other = loaded[scenario.id][1]
                 raise ScenarioLoadError(f"{file}: scenario id {scenario.id!r} also in {other}")
@@ -55,7 +55,7 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return dict(pairs)
 
 
-def _load_file(file: Path) -> Scenario:
+def load_file(file: Path) -> Scenario:
     # Plain JSON parsing keeps the last of a repeated key, silently rewriting ground truth.
     try:
         data = file.read_bytes()

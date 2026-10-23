@@ -1,10 +1,11 @@
 import json
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-from scenarios.loader import DEV_DIR, load_dir
+from scenarios.loader import DEV_DIR, load_file
 from scenarios.schema import AgentView, Scenario
 
 
@@ -54,9 +55,9 @@ def test_agent_view_leaks_nothing_hidden(scenario_data: dict[str, Any]) -> None:
 
 
 # Seed tags are plain words ("tls", "iam") that legitimately appear in evidence text.
-@pytest.mark.parametrize("scenario", load_dir(DEV_DIR), ids=lambda s: s.id)
-def test_seed_agent_view_leaks_nothing_hidden(scenario: Scenario) -> None:
-    _assert_no_leak(scenario)
+@pytest.mark.parametrize("path", sorted(DEV_DIR.glob("*.json")), ids=lambda p: p.stem)
+def test_seed_agent_view_leaks_nothing_hidden(path: Path) -> None:
+    _assert_no_leak(load_file(path))
 
 
 def test_agent_view_shares_no_mutable_state(scenario_data: dict[str, Any]) -> None:
