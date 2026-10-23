@@ -63,8 +63,6 @@ part of it in interviews. So:
 
 ## Commands
 
-(planned — created in step 1; drop this marker when the Makefile lands)
-
 | Command | Does |
 |---|---|
 | `make setup` | `uv sync` in `agent/`, `go mod download` in `control-plane/` |
@@ -73,7 +71,7 @@ part of it in interviews. So:
 | `make lint` | `ruff check` + `gofmt -l` + `go vet` |
 | `make fmt` | `ruff format` + `gofmt -w` |
 | `make up` / `make down` | Docker Compose: Postgres+pgvector, Redis 7 |
-| `make eval` | Full eval run; writes a log to `results/` |
+| `make eval` | (planned, step 2) Full eval run; writes a log to `results/` |
 
 Narrow the loop while iterating:
 
@@ -247,19 +245,11 @@ eval: log naive baseline on 3 seed scenarios
 chore(infra): pin postgres and redis images in compose
 ```
 
-## Scenario schema (Python, pydantic v2)
+## Scenario schema
 
-Spec only, until step 1 lands. Once `agent/scenarios/schema.py` exists it is the source
-of truth. Trim this section to a pointer rather than maintaining both.
-
-Scenario: id, title, source (real|synthetic), difficulty 1-3, tags, alert, logs,
-metrics, deploys, configs, ground_truth, budget.
-GroundTruth: root_cause (enum: bad_deploy, config_error, dependency_slowdown,
-cert_expiry, resource_exhaustion, traffic_spike, data_issue, infra_failure), summary,
-affected_service, required_evidence, distractors, acceptable_remediations.
-Seed scenarios: renamed env var after a deploy (difficulty 1), connection pool
-exhaustion from a slow payments gateway (2), cert expiry from a broken renewal after an
-IAM change with a red-herring deploy and CPU spike (3).
+`agent/scenarios/schema.py` is the source of truth; `agent/scenarios/loader.py` loads
+`agent/scenarios/data/<split>/<scenario-id>.json`. The three seed scenarios live in
+`data/dev/`.
 
 ## Known open problem
 
