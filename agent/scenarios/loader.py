@@ -1,4 +1,3 @@
-import codecs
 import json
 from collections import Counter
 from collections.abc import Iterable
@@ -61,15 +60,14 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def load_file(file: Path) -> Scenario:
     # Parsed twice on purpose: pydantic keeps the last of a repeated key, json.loads can reject it.
     try:
-        data = file.read_bytes()
-        if data.startswith(codecs.BOM_UTF8):
-            raise ValueError("starts with a UTF-8 byte-order mark; save as UTF-8 without BOM")
         try:
-            data.decode("utf-8")
+            text = file.read_bytes().decode("utf-8")
         except UnicodeDecodeError as e:
             raise ValueError(f"not UTF-8 ({e}); save as UTF-8 without BOM") from e
-        json.loads(data, object_pairs_hook=_reject_duplicate_keys)
-        scenario = Scenario.model_validate_json(data)
+        if text.startswith("﻿"):
+            raise ValueError("starts with a UTF-8 byte-order mark; save as UTF-8 without BOM")
+        json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+        scenario = Scenario.model_validate_json(text)
     except (OSError, ValueError, ValidationError) as e:
         raise ScenarioLoadError(f"{file}: {e}") from e
     if file.stem != scenario.id:
