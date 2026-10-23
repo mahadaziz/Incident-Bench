@@ -95,6 +95,20 @@ def test_rejects_non_scenario_entries(
         load_dir(tmp_path)
 
 
+def test_wraps_read_errors_naming_the_file(
+    tmp_path: Path, scenario_data: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write(tmp_path, scenario_data)
+
+    def _deny(self: Path) -> bytes:
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(Path, "read_bytes", _deny)
+
+    with pytest.raises(ScenarioLoadError, match=r"(?s)fixture-orders-outage\.json.*access denied"):
+        load_dir(tmp_path)
+
+
 def test_rejects_empty_directory(tmp_path: Path) -> None:
     with pytest.raises(ScenarioLoadError, match="no scenarios found"):
         load_dir(tmp_path)

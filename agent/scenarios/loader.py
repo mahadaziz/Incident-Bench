@@ -61,7 +61,7 @@ def _load_file(file: Path) -> Scenario:
         data = file.read_bytes()
         json.loads(data, object_pairs_hook=_reject_duplicate_keys)
         scenario = Scenario.model_validate_json(data)
-    except (ValueError, ValidationError) as e:
+    except (OSError, ValueError, ValidationError) as e:
         raise ScenarioLoadError(f"{file}: {e}") from e
     if file.stem != scenario.id:
         raise ScenarioLoadError(f"{file}: filename must match scenario id {scenario.id!r}")
