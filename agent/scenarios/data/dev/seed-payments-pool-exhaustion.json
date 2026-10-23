@@ -1,0 +1,175 @@
+{
+  "id": "seed-payments-pool-exhaustion",
+  "title": "Order service DB pool exhausted by slow payments gateway",
+  "source": "synthetic",
+  "difficulty": 2,
+  "tags": ["connection-pool", "third-party", "seed"],
+  "alert": {
+    "name": "OrderServiceLatencyHigh",
+    "service": "order-service",
+    "severity": "critical",
+    "fired_at": "2026-04-17T10:08:00Z",
+    "summary": "order-service p99 latency above 2000ms for 5 minutes across all endpoints"
+  },
+  "logs": [
+    {
+      "id": "log-001",
+      "timestamp": "2026-04-17T09:58:20Z",
+      "service": "order-service",
+      "level": "INFO",
+      "message": "POST /orders 201 in 310ms"
+    },
+    {
+      "id": "log-002",
+      "timestamp": "2026-04-17T10:01:05Z",
+      "service": "statuspage-poller",
+      "level": "INFO",
+      "message": "payments provider status changed: operational -> degraded_performance (\"Elevated latency on charge API, EU region\")"
+    },
+    {
+      "id": "log-003",
+      "timestamp": "2026-04-17T10:02:13Z",
+      "service": "order-service",
+      "level": "WARN",
+      "message": "payments-gateway POST /v2/charges took 8.9s (timeout 30s)"
+    },
+    {
+      "id": "log-004",
+      "timestamp": "2026-04-17T10:04:40Z",
+      "service": "order-service",
+      "level": "ERROR",
+      "message": "HikariPool-1 - Connection is not available, request timed out after 5000ms (total=40, active=40, idle=0, waiting=187)"
+    },
+    {
+      "id": "log-005",
+      "timestamp": "2026-04-17T10:05:02Z",
+      "service": "order-service",
+      "level": "ERROR",
+      "message": "GET /orders/8812 failed: could not acquire database connection"
+    },
+    {
+      "id": "log-006",
+      "timestamp": "2026-04-17T10:05:30Z",
+      "service": "orders-db",
+      "level": "INFO",
+      "message": "checkpoint complete: wrote 1840 buffers (1.1%); write=26.9 s, sync=0.004 s"
+    },
+    {
+      "id": "log-007",
+      "timestamp": "2026-04-17T10:06:11Z",
+      "service": "order-service",
+      "level": "WARN",
+      "message": "payments-gateway POST /v2/charges took 12.4s (timeout 30s)"
+    },
+    {
+      "id": "log-008",
+      "timestamp": "2026-04-17T10:06:45Z",
+      "service": "order-service",
+      "level": "WARN",
+      "message": "slow transaction: OrderService.placeOrder held db connection for 13.1s (12.4s inside PaymentsClient.charge)"
+    }
+  ],
+  "metrics": [
+    {
+      "id": "met-001",
+      "name": "http_request_duration_p99",
+      "service": "order-service",
+      "unit": "ms",
+      "points": [
+        {"timestamp": "2026-04-17T09:55:00Z", "value": 420},
+        {"timestamp": "2026-04-17T10:00:00Z", "value": 450},
+        {"timestamp": "2026-04-17T10:03:00Z", "value": 1900},
+        {"timestamp": "2026-04-17T10:05:00Z", "value": 5100},
+        {"timestamp": "2026-04-17T10:08:00Z", "value": 5200}
+      ]
+    },
+    {
+      "id": "met-002",
+      "name": "db_pool_active_connections",
+      "service": "order-service",
+      "unit": "count",
+      "points": [
+        {"timestamp": "2026-04-17T09:55:00Z", "value": 11},
+        {"timestamp": "2026-04-17T10:00:00Z", "value": 12},
+        {"timestamp": "2026-04-17T10:03:00Z", "value": 38},
+        {"timestamp": "2026-04-17T10:05:00Z", "value": 40},
+        {"timestamp": "2026-04-17T10:08:00Z", "value": 40}
+      ]
+    },
+    {
+      "id": "met-003",
+      "name": "outbound_request_duration_p95",
+      "service": "order-service:payments-gateway",
+      "unit": "ms",
+      "points": [
+        {"timestamp": "2026-04-17T09:55:00Z", "value": 290},
+        {"timestamp": "2026-04-17T10:00:00Z", "value": 310},
+        {"timestamp": "2026-04-17T10:03:00Z", "value": 8700},
+        {"timestamp": "2026-04-17T10:05:00Z", "value": 11900},
+        {"timestamp": "2026-04-17T10:08:00Z", "value": 12600}
+      ]
+    },
+    {
+      "id": "met-004",
+      "name": "cpu_utilization",
+      "service": "orders-db",
+      "unit": "percent",
+      "points": [
+        {"timestamp": "2026-04-17T09:55:00Z", "value": 34},
+        {"timestamp": "2026-04-17T10:00:00Z", "value": 36},
+        {"timestamp": "2026-04-17T10:03:00Z", "value": 31},
+        {"timestamp": "2026-04-17T10:05:00Z", "value": 29},
+        {"timestamp": "2026-04-17T10:08:00Z", "value": 30}
+      ]
+    },
+    {
+      "id": "met-005",
+      "name": "http_requests_per_second",
+      "service": "order-service",
+      "unit": "req/s",
+      "points": [
+        {"timestamp": "2026-04-17T09:55:00Z", "value": 1180},
+        {"timestamp": "2026-04-17T10:00:00Z", "value": 1260},
+        {"timestamp": "2026-04-17T10:03:00Z", "value": 1310},
+        {"timestamp": "2026-04-17T10:05:00Z", "value": 1295},
+        {"timestamp": "2026-04-17T10:08:00Z", "value": 1270}
+      ]
+    }
+  ],
+  "deploys": [
+    {
+      "id": "dep-001",
+      "service": "order-service",
+      "version": "v5.12.0",
+      "timestamp": "2026-04-16T16:20:00Z",
+      "author": "marco.d",
+      "description": "Add optional order notes field to POST /orders"
+    }
+  ],
+  "configs": [
+    {
+      "id": "cfg-001",
+      "service": "order-service",
+      "captured_at": "2026-04-17T10:07:00Z",
+      "values": {
+        "DB_POOL_MAX_SIZE": "40",
+        "DB_POOL_CONNECTION_TIMEOUT_MS": "5000",
+        "PAYMENTS_BASE_URL": "https://api.payments-provider.example/v2",
+        "PAYMENTS_TIMEOUT_MS": "30000"
+      }
+    }
+  ],
+  "ground_truth": {
+    "root_cause": "dependency_slowdown",
+    "summary": "The external payments provider degraded and charge calls went from ~300ms to 9-13s. order-service makes that call inside the database transaction in placeOrder, so each slow charge held a DB connection for its full duration. All 40 pooled connections were soon held, and every endpoint, including reads that never touch payments, timed out waiting for a connection. The database itself was healthy and traffic was within normal range.",
+    "affected_service": "order-service",
+    "required_evidence": ["met-003", "log-004", "log-008"],
+    "distractors": ["dep-001", "met-005"],
+    "acceptable_remediations": [
+      "Move the payments gateway call outside the database transaction so connections are not held while waiting on it",
+      "Lower PAYMENTS_TIMEOUT_MS and put a circuit breaker on the payments gateway so slow charges fail fast",
+      "Temporarily queue or shed new payment attempts until the provider recovers"
+    ]
+  },
+  "budget": {"max_steps": 15, "max_tokens": 60000}
+}
