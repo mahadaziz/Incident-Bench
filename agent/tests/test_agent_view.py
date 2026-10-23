@@ -54,10 +54,15 @@ def test_agent_view_leaks_nothing_hidden(scenario_data: dict[str, Any]) -> None:
     _assert_no_leak(scenario, also_hidden=scenario.tags)
 
 
-# Seed tags are plain words ("tls", "iam") that legitimately appear in evidence text.
+# Tags that are plain words legitimately found in evidence text; every other tag is checked.
+EVIDENCE_WORD_TAGS = {"tls", "iam"}
+
+
 @pytest.mark.parametrize("path", scenario_files(DEV_DIR), ids=lambda p: p.stem)
 def test_seed_agent_view_leaks_nothing_hidden(path: Path) -> None:
-    _assert_no_leak(load_file(path))
+    scenario = load_file(path)
+
+    _assert_no_leak(scenario, also_hidden=set(scenario.tags) - EVIDENCE_WORD_TAGS)
 
 
 def test_agent_view_shares_no_mutable_state(scenario_data: dict[str, Any]) -> None:
