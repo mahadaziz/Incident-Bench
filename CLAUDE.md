@@ -2,9 +2,11 @@
 
 Guidance for Claude Code (claude.ai/code) working in this repository.
 
-**Current status:** build order step 1, nothing implemented yet. Everything marked
-(planned) below, plus `results/` and `ARCHITECTURE.md`, does not exist until its step
-lands. Update this line as steps complete.
+**Current status:** step 1 done (skeleton, Makefile, Compose, CI, scenario schema and
+loader, three seed scenarios, `ARCHITECTURE.md`). Next is step 2. Everything marked
+(planned) below, plus `results/`, does not exist until its step lands. Before the step-2
+baseline is logged, renumber the seed evidence IDs (see `ARCHITECTURE.md`). Update this
+line as steps complete.
 
 An AI on-call incident investigator, and a published benchmark that measures it. An
 alert fires, a durable queue picks it up, an agent investigates with read-only tools,
