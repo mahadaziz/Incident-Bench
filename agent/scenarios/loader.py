@@ -38,7 +38,7 @@ def _scenario_files(directory: Path) -> list[Path]:
     # Reject rather than skip, so a misnamed scenario can't silently drop out of the set.
     files = []
     for entry in sorted(directory.iterdir()):
-        if entry.name.startswith(".") and entry.suffix != ".json":
+        if entry.name.startswith(".") and not entry.name.lower().endswith(".json"):
             continue
         if not entry.is_file() or entry.suffix != ".json":
             raise ScenarioLoadError(f"{entry}: not a .json scenario file")

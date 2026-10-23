@@ -73,6 +73,17 @@ def test_rejects_invalid_scenario_naming_the_file(
         load_dir(tmp_path)
 
 
+@pytest.mark.parametrize("name", [".json", ".other.JSON"])
+def test_rejects_hidden_json_without_lowercase_suffix(
+    tmp_path: Path, scenario_data: dict[str, Any], name: str
+) -> None:
+    _write(tmp_path, scenario_data)
+    (tmp_path / name).write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ScenarioLoadError, match="not a .json scenario file"):
+        load_dir(tmp_path)
+
+
 def test_rejects_hidden_json_file(tmp_path: Path, scenario_data: dict[str, Any]) -> None:
     _write(tmp_path, scenario_data)
     _write(tmp_path, {**scenario_data, "id": "other"}, name=".other")
