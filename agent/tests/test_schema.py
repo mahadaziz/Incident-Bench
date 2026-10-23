@@ -26,6 +26,12 @@ def _reject(data: dict[str, Any], match: str) -> None:
         Scenario.model_validate_json(json.dumps(data))
 
 
+def _set_at(data: Any, path: tuple[Any, ...], value: Any) -> None:
+    for key in path[:-1]:
+        data = data[key]
+    data[path[-1]] = value
+
+
 # Matching message text is unreliable: pydantic echoes a truncated copy of the input.
 def _reject_field(data: dict[str, Any], loc: tuple[Any, ...], error_type: str) -> None:
     with pytest.raises(ValidationError) as exc:
@@ -112,10 +118,7 @@ def test_rejects_unknown_affected_service(scenario_data: dict[str, Any]) -> None
 def test_rejects_blank_text(
     scenario_data: dict[str, Any], path: tuple[Any, ...], blank: str
 ) -> None:
-    target: Any = scenario_data
-    for key in path[:-1]:
-        target = target[key]
-    target[path[-1]] = blank
+    _set_at(scenario_data, path, blank)
     _reject_field(scenario_data, path, "string_pattern_mismatch")
 
 
@@ -164,10 +167,7 @@ def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any], bad_id
     ],
 )
 def test_rejects_unknown_field(scenario_data: dict[str, Any], path: tuple[Any, ...]) -> None:
-    target: Any = scenario_data
-    for key in path:
-        target = target[key]
-    target["distractor"] = ["dep-001"]
+    _set_at(scenario_data, (*path, "distractor"), ["dep-001"])
     _reject_field(scenario_data, (*path, "distractor"), "extra_forbidden")
 
 
@@ -192,10 +192,7 @@ def test_rejects_out_of_range_difficulty(
     ],
 )
 def test_rejects_naive_timestamp(scenario_data: dict[str, Any], path: tuple[Any, ...]) -> None:
-    target: Any = scenario_data
-    for key in path[:-1]:
-        target = target[key]
-    target[path[-1]] = "2026-01-10T12:00:00"
+    _set_at(scenario_data, path, "2026-01-10T12:00:00")
     _reject_field(scenario_data, path, "timezone_aware")
 
 
@@ -218,10 +215,7 @@ def test_rejects_non_finite_metric_value(scenario_data: dict[str, Any], value: f
 def test_rejects_wrong_json_type_instead_of_coercing(
     scenario_data: dict[str, Any], path: tuple[Any, ...], wrong_type: Any, error_type: str
 ) -> None:
-    target: Any = scenario_data
-    for key in path[:-1]:
-        target = target[key]
-    target[path[-1]] = wrong_type
+    _set_at(scenario_data, path, wrong_type)
     _reject_field(scenario_data, path, error_type)
 
 
@@ -276,10 +270,7 @@ def test_rejects_non_positive_budget(scenario_data: dict[str, Any], field: str) 
 def test_rejects_non_slug_service_name(
     scenario_data: dict[str, Any], path: tuple[Any, ...], bad: str
 ) -> None:
-    target: Any = scenario_data
-    for key in path[:-1]:
-        target = target[key]
-    target[path[-1]] = bad
+    _set_at(scenario_data, path, bad)
     _reject_field(scenario_data, path, "string_pattern_mismatch")
 
 
