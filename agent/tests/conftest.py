@@ -68,7 +68,7 @@ def scenario_data() -> dict[str, Any]:
             "root_cause": "config_error",
             "summary": "GROUND-TRUTH-SUMMARY-SENTINEL",
             "affected_service": "orders-api",
-            "required_evidence": ["log-002", "cfg-001"],
+            "required_evidence": [["log-002"], ["cfg-001"]],
             "distractors": ["dep-001"],
             "acceptable_remediations": ["REMEDIATION-SENTINEL"],
         },

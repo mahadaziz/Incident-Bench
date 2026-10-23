@@ -32,7 +32,7 @@ def test_rejects_duplicate_id_within_kind(scenario_data: dict[str, Any]) -> None
 
 
 def test_rejects_unknown_required_evidence(scenario_data: dict[str, Any]) -> None:
-    scenario_data["ground_truth"]["required_evidence"].append("log-999")
+    scenario_data["ground_truth"]["required_evidence"][0].append("log-999")
     _reject(scenario_data, r"required_evidence references unknown ids \['log-999'\]")
 
 
@@ -47,13 +47,31 @@ def test_rejects_id_both_required_and_distractor(scenario_data: dict[str, Any]) 
 
 
 def test_rejects_repeated_required_id(scenario_data: dict[str, Any]) -> None:
-    scenario_data["ground_truth"]["required_evidence"].append("log-002")
+    scenario_data["ground_truth"]["required_evidence"].append(["log-002"])
     _reject(scenario_data, r"required_evidence repeats \['log-002'\]")
 
 
 def test_rejects_empty_required_evidence(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"] = []
     _reject(scenario_data, "required_evidence")
+
+
+def test_rejects_empty_evidence_group(scenario_data: dict[str, Any]) -> None:
+    scenario_data["ground_truth"]["required_evidence"].append([])
+    _reject(scenario_data, "required_evidence")
+
+
+def test_accepts_alternative_ids_within_a_group(scenario_data: dict[str, Any]) -> None:
+    scenario_data["ground_truth"]["required_evidence"] = [["log-002", "met-001"], ["cfg-001"]]
+
+    scenario = Scenario.model_validate_json(json.dumps(scenario_data))
+
+    assert scenario.ground_truth.required_ids() == ("log-002", "met-001", "cfg-001")
+
+
+def test_rejects_id_repeated_within_a_group(scenario_data: dict[str, Any]) -> None:
+    scenario_data["ground_truth"]["required_evidence"][0].append("log-002")
+    _reject(scenario_data, r"required_evidence repeats \['log-002'\]")
 
 
 @pytest.mark.parametrize("value", [[], None])
@@ -92,7 +110,7 @@ def test_rejects_blank_text(
 
 
 def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
-    scenario_data["ground_truth"]["required_evidence"].append("log-999")
+    scenario_data["ground_truth"]["required_evidence"].append(["log-999"])
     _reject(scenario_data, "scenario 'fixture-orders-outage'")
 
 
@@ -117,7 +135,7 @@ def test_rejects_malformed_evidence_id(
 
 @pytest.mark.parametrize("bad_id", ["the-bad-deploy", "log-١٢٣"])
 def test_rejects_malformed_ground_truth_id(scenario_data: dict[str, Any], bad_id: str) -> None:
-    scenario_data["ground_truth"]["required_evidence"] = [bad_id]
+    scenario_data["ground_truth"]["required_evidence"] = [[bad_id]]
     _reject(scenario_data, "String should match pattern")
 
 

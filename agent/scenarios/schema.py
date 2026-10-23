@@ -41,6 +41,7 @@ MetricId = Annotated[str, StringConstraints(pattern=r"^met-[0-9]{3,}$")]
 DeployId = Annotated[str, StringConstraints(pattern=r"^dep-[0-9]{3,}$")]
 ConfigId = Annotated[str, StringConstraints(pattern=r"^cfg-[0-9]{3,}$")]
 EvidenceId = Annotated[str, StringConstraints(pattern=r"^(log|met|dep|cfg)-[0-9]{3,}$")]
+EvidenceGroup = Annotated[tuple[EvidenceId, ...], Field(min_length=1)]
 
 
 class Alert(_Model):
@@ -92,9 +93,13 @@ class GroundTruth(_Model):
     root_cause: RootCause
     summary: Text
     affected_service: Text
-    required_evidence: tuple[EvidenceId, ...] = Field(min_length=1)
+    # One group per causal fact; citing any id in a group covers that fact.
+    required_evidence: tuple[EvidenceGroup, ...] = Field(min_length=1)
     distractors: tuple[EvidenceId, ...] = Field(min_length=1)
     acceptable_remediations: tuple[Text, ...] = Field(min_length=1)
+
+    def required_ids(self) -> tuple[str, ...]:
+        return tuple(i for group in self.required_evidence for i in group)
 
 
 class Budget(_Model):
@@ -153,14 +158,16 @@ class Scenario(_Model):
         if dupes := sorted(i for i, n in id_counts.items() if n > 1):
             problems.append(f"duplicate evidence ids {dupes}")
 
-        for field in ("required_evidence", "distractors"):
-            ids = getattr(gt, field)
+        for field, ids in (
+            ("required_evidence", gt.required_ids()),
+            ("distractors", gt.distractors),
+        ):
             if dupes := sorted(i for i, n in Counter(ids).items() if n > 1):
                 problems.append(f"ground_truth.{field} repeats {dupes}")
             if unknown := sorted(set(ids) - id_counts.keys()):
                 problems.append(f"ground_truth.{field} references unknown ids {unknown}")
 
-        if overlap := sorted(set(gt.required_evidence) & set(gt.distractors)):
+        if overlap := sorted(set(gt.required_ids()) & set(gt.distractors)):
             problems.append(f"ids are both required evidence and distractors {overlap}")
 
         services = {self.alert.service} | {item.service for item in self._evidence()}

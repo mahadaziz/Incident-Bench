@@ -66,7 +66,7 @@ def test_rejects_duplicate_json_keys(tmp_path: Path, scenario_data: dict[str, An
 def test_rejects_invalid_scenario_naming_the_file(
     tmp_path: Path, scenario_data: dict[str, Any]
 ) -> None:
-    scenario_data["ground_truth"]["required_evidence"] = ["log-999"]
+    scenario_data["ground_truth"]["required_evidence"] = [["log-999"]]
     _write(tmp_path, scenario_data)
 
     with pytest.raises(ScenarioLoadError, match=r"(?s)fixture-orders-outage\.json.*log-999"):

@@ -163,7 +163,7 @@
     "root_cause": "dependency_slowdown",
     "summary": "The external payments provider degraded and charge calls went from ~300ms to 9-13s. order-service makes that call inside the database transaction in placeOrder, so each slow charge held a DB connection for its full duration. All 40 pooled connections were soon held, and every endpoint, including reads that never touch payments, timed out waiting for a connection. The database itself was healthy and traffic was within normal range.",
     "affected_service": "order-service",
-    "required_evidence": ["met-003", "log-004", "log-008"],
+    "required_evidence": [["met-003"], ["log-004"], ["log-008"]],
     "distractors": ["dep-001", "met-005"],
     "acceptable_remediations": [
       "Move the payments gateway call outside the database transaction so connections are not held while waiting on it",
