@@ -50,6 +50,7 @@ Each row names the test that proves the handling. A row with no test isn't handl
 | Blank text (`"summary": "   "`) | Scoring compares against an empty target | Every text field must contain a non-space character | `test_schema.py::test_rejects_blank_text` |
 | Scenario with no distractors | Scores easier than intended; breaks core rule 4 | `distractors` needs at least one ID | `test_schema.py::test_rejects_missing_distractors` |
 | Service name with a stray space or capital (`'Order-Service '`) | Exact-name tool lookups can never reach that evidence | Every service field must be a lowercase slug | `test_schema.py::test_rejects_non_slug_service_name` |
+| Config key with stray spaces (`" DATABASE_URL"`) | The evidence quietly says something else, and key lookups miss it | Keys must be non-blank with no surrounding whitespace | `test_schema.py::test_rejects_untrimmed_config_key` |
 | `affected_service` typo | Every affected-service match fails for that scenario | Must name the alert's service or a service in the evidence | `test_schema.py::test_rejects_unknown_affected_service` |
 | Timestamp without a time zone | Event order is ambiguous, and event order is how a root cause is found | `AwareDatetime` on every timestamp | `test_schema.py::test_rejects_naive_timestamp` |
 | Same scenario id in two files (e.g. dev and test) | One silently overwrites the other; the scenario set and its hash are wrong | Loader rejects duplicate ids across directories | `test_loader.py::test_rejects_duplicate_id_across_directories` |
