@@ -279,3 +279,18 @@ def test_accepts_canonical_evidence_ids(scenario_data: dict[str, Any], good_id: 
     scenario_data["logs"][0]["id"] = good_id
 
     _ = Scenario.model_validate_json(json.dumps(scenario_data))
+
+
+@pytest.mark.parametrize("bad_key", ["", " ", " DATABASE_URL", "DATABASE_URL "])
+def test_rejects_untrimmed_config_key(scenario_data: dict[str, Any], bad_key: str) -> None:
+    scenario_data["configs"][0]["values"] = {bad_key: "x"}
+    _reject_field(
+        scenario_data, ("configs", 0, "values", bad_key, "[key]"), "string_pattern_mismatch"
+    )
+
+
+@pytest.mark.parametrize("good_key", ["DATABASE_URL", "server.port", "a"])
+def test_accepts_config_key(scenario_data: dict[str, Any], good_key: str) -> None:
+    scenario_data["configs"][0]["values"] = {good_key: "x"}
+
+    _ = Scenario.model_validate_json(json.dumps(scenario_data))

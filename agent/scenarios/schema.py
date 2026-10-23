@@ -35,6 +35,7 @@ class RootCause(StrEnum):
 
 
 Text = Annotated[str, StringConstraints(pattern=r"\S")]
+ConfigKey = Annotated[str, StringConstraints(pattern=r"^\S(?:.*\S)?$")]
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 ScenarioId = Slug
 # Tools will look services up by exact name, so stray spaces or capitals would hide evidence.
@@ -98,7 +99,7 @@ class ConfigSnapshot(_Model):
     id: ConfigId
     service: ServiceName
     captured_at: AwareDatetime
-    values: dict[str, str] = Field(min_length=1)
+    values: dict[ConfigKey, str] = Field(min_length=1)
 
 
 class GroundTruth(_Model):
