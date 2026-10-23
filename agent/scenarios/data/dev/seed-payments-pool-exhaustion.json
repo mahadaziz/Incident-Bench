@@ -9,7 +9,7 @@
     "service": "order-service",
     "severity": "critical",
     "fired_at": "2026-04-17T10:08:00Z",
-    "summary": "order-service p99 latency above 2000ms for 5 minutes across all endpoints"
+    "summary": "order-service p99 latency above 2000ms across all endpoints"
   },
   "logs": [
     {

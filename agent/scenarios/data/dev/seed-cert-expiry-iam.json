@@ -59,7 +59,7 @@
       "timestamp": "2026-05-14T00:02:40Z",
       "service": "api-gateway",
       "level": "INFO",
-      "message": "router v4 initialised; request log sampling at 5%"
+      "message": "router v4: 0 upstream errors in last 60s; request log sampling at 5%"
     },
     {
       "id": "log-008",

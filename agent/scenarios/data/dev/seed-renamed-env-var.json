@@ -9,7 +9,7 @@
     "service": "checkout-service",
     "severity": "critical",
     "fired_at": "2026-03-04T14:06:00Z",
-    "summary": "checkout-service healthy replicas at 0/3 for 5 minutes"
+    "summary": "checkout-service has 0 of 3 replicas healthy"
   },
   "logs": [
     {
