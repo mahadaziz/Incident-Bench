@@ -1,7 +1,5 @@
-import pytest
-
 from scenarios.loader import DEV_DIR, load_dir
-from scenarios.schema import RootCause, Scenario
+from scenarios.schema import RootCause
 
 SEEDS = load_dir(DEV_DIR)
 
@@ -15,8 +13,3 @@ def test_seed_scenarios_validate() -> None:
         2: RootCause.DEPENDENCY_SLOWDOWN,
         3: RootCause.CERT_EXPIRY,
     }
-
-
-@pytest.mark.parametrize("scenario", SEEDS, ids=lambda s: s.id)
-def test_seed_has_distractors(scenario: Scenario) -> None:
-    assert scenario.ground_truth.distractors

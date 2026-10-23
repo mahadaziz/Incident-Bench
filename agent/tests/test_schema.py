@@ -56,6 +56,15 @@ def test_rejects_empty_required_evidence(scenario_data: dict[str, Any]) -> None:
     _reject(scenario_data, "required_evidence")
 
 
+@pytest.mark.parametrize("value", [[], None])
+def test_rejects_missing_distractors(scenario_data: dict[str, Any], value: Any) -> None:
+    if value is None:
+        del scenario_data["ground_truth"]["distractors"]
+    else:
+        scenario_data["ground_truth"]["distractors"] = value
+    _reject(scenario_data, "distractors")
+
+
 def test_error_names_the_scenario(scenario_data: dict[str, Any]) -> None:
     scenario_data["ground_truth"]["required_evidence"].append("log-999")
     _reject(scenario_data, "scenario 'fixture-orders-outage'")

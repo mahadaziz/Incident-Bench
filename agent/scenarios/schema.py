@@ -93,7 +93,7 @@ class GroundTruth(_Model):
     summary: Text
     affected_service: Text
     required_evidence: tuple[EvidenceId, ...] = Field(min_length=1)
-    distractors: tuple[EvidenceId, ...] = ()
+    distractors: tuple[EvidenceId, ...] = Field(min_length=1)
     acceptable_remediations: tuple[Text, ...] = Field(min_length=1)
 
 
