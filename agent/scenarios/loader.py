@@ -1,5 +1,8 @@
+import json
+from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -46,10 +49,19 @@ def _scenario_files(directory: Path) -> list[Path]:
     return files
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    counts = Counter(key for key, _ in pairs)
+    if dupes := sorted(key for key, n in counts.items() if n > 1):
+        raise ValueError(f"duplicate JSON keys {dupes}")
+    return dict(pairs)
+
+
 def _load_file(file: Path) -> Scenario:
+    # Plain JSON parsing keeps the last of a repeated key, silently rewriting ground truth.
     try:
-        scenario = Scenario.model_validate_json(file.read_bytes())
-    except ValidationError as e:
+        raw = json.loads(file.read_bytes(), object_pairs_hook=_reject_duplicate_keys)
+        scenario = Scenario.model_validate(raw)
+    except (ValueError, ValidationError) as e:
         raise ScenarioLoadError(f"{file}: {e}") from e
     if file.stem != scenario.id:
         raise ScenarioLoadError(f"{file}: filename must match scenario id {scenario.id!r}")

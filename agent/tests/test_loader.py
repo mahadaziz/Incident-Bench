@@ -52,6 +52,17 @@ def test_rejects_malformed_json_naming_the_file(tmp_path: Path) -> None:
         load_dir(tmp_path)
 
 
+def test_rejects_duplicate_json_keys(tmp_path: Path, scenario_data: dict[str, Any]) -> None:
+    text = json.dumps(scenario_data).replace(
+        '"distractors": ["dep-001"]', '"distractors": ["dep-001"], "distractors": []'
+    )
+    assert text.count('"distractors"') == 2
+    (tmp_path / f"{scenario_data['id']}.json").write_text(text, encoding="utf-8")
+
+    with pytest.raises(ScenarioLoadError, match=r"duplicate JSON keys \['distractors'\]"):
+        load_dir(tmp_path)
+
+
 def test_rejects_invalid_scenario_naming_the_file(
     tmp_path: Path, scenario_data: dict[str, Any]
 ) -> None:
