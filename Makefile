@@ -20,18 +20,18 @@ setup:
 test: test-py test-go
 
 test-py:
-	cd $(AGENT) && uv run pytest
+	cd $(AGENT) && uv run --locked pytest
 
 test-go:
 	cd $(CONTROL_PLANE) && go test -race ./...
 
 lint:
-	cd $(AGENT) && uv run ruff check && uv run ruff format --check
+	cd $(AGENT) && uv run --locked ruff check && uv run --locked ruff format --check
 	@cd $(CONTROL_PLANE) && unformatted="$$(gofmt -l .)" && if [ -n "$$unformatted" ]; then echo "$$unformatted"; echo "gofmt: files above need formatting, run make fmt" >&2; exit 1; fi
 	cd $(CONTROL_PLANE) && go vet ./...
 
 fmt:
-	cd $(AGENT) && uv run ruff check --fix-only && uv run ruff format
+	cd $(AGENT) && uv run --locked ruff check --fix-only && uv run --locked ruff format
 	cd $(CONTROL_PLANE) && gofmt -w .
 
 up:
